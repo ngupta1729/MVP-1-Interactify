@@ -7,6 +7,18 @@
 .obsidian/cache
 .trash/
 
+# Node / Next.js app
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Env
+.env
+.env*.local
+.vercel
+
 # OS
 .DS_Store
 Thumbs.db
