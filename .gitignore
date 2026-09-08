@@ -1,3 +1,6 @@
+# Local MCP credentials — never commit (contains a live API key)
+.mcp.json
+
 # Obsidian — keep shared vault config, ignore per-machine UI state
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
