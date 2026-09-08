@@ -83,4 +83,61 @@ per-machine UI state, keeps shared vault config). The whole project is now the v
 
 ---
 
+### Entry 5 — Do we still need journey.md if we have Obsidian?
+
+**Asked (user):** "Do we still need journey.md if we have obsidian, cant we just use obsidian to do what journey.md was created for."
+
+**Answer (Claude):** They're different things. Obsidian is a *lens* — it opens plain `.md`
+files and renders them (Mermaid, `[[links]]`, graph); it stores and maintains nothing itself.
+`journey.md` / `journey-log.md` are the actual content that Claude writes and keeps current.
+Without the files, Obsidian shows nothing. Only change vs. the original plan: no need for a
+VS Code Mermaid extension or GitHub to view the diagram — Obsidian's reading view handles it.
+
+**Changed:** nothing (clarification only).
+
+---
+
+### Entry 6 — Orientation workout (all 5 states)
+
+**Asked (user):** ran `/sherpa-b:orientation`; then over the conversation provided:
+- Project idea: *"An H5P plugin for ChatGPT that turns AI-generated content into interactive
+  H5P activities you can create, refine, and use directly."*
+- Problem & who: *"Teachers, course creators and L&D teams can use AI to create content, but
+  turning that content into an engaging interactive learning activity still requires a
+  separate H5P authoring workflow. The idea is to let them go directly from content/
+  conversation in ChatGPT → interactive H5P activity."*
+- *"Plugin for ChatGPT"*: *"A ChatGPT App, similar to the Kahoot ChatGPT App. ChatGPT
+  provides the AI and understands what the user wants; H5P provides the tools... a user could
+  say 'Turn these lecture notes into an interactive activity', and the H5P app could create
+  it and allow the user to refine it conversationally."*
+- Technical background: *"I'm a Product Manager with experience working closely with software
+  and AI products, but I'm not a strong developer. I've started experimenting with AI coding
+  and agentic tools, and I want to use the buildcamp to become more hands-on in actually
+  building AI products."*
+- Success in 7 weeks: *"A working end-to-end prototype, similar to the Kahoot experience...
+  Ideally, I'd test it with a few real users."*
+- Time/goals: *"I dont know, but i can do binge and goal is to complete it this week."* →
+  *"I think i want to get to a working MVP and I am open to Crawl ---> Run approach. My crawl
+  would be my MVP, that i can launch in market and get some initial feedback."* →
+  *"I have no strong views on weekly planning."*
+- Autonomy level: *"Collaborator"*
+
+**Answer (Claude):** Ran all 5 orientation states. State 1: created workspace dirs; user
+chose to keep `backup_full_observation_log` telemetry mode and to apply the settings
+permission allowlist. Flagged the program is **4 weeks, ending Sep 18, 2026** (not 7) — ~10
+days from orientation. State 2: updated the Sherpa-B profile (person + project fields), wrote
+`reports/participant_profile.md`, logged 5 structured entries. State 3: logged goals
+(Crawl→Run MVP, binge week, no fixed plan). State 4: introduced the autonomy spectrum; user
+picked **Level 2 — Collaborator**; logged `build-starting-autonomy-level` + refreshed
+maturity/existing-work/challenges entries. State 5: seeded + personalized `CLAUDE.md` with a
+Participant Context block. Committed everything as `0bd4f47`. Updated `journey.md`.
+
+**Changed:** `reports/`, `specs/`, `data/`, `prompts/`, `src/`, `utils/`, `tests/`, `temp/`
+created · `.claude/settings.json` allowlist · `CLAUDE.md` seeded + personalized ·
+`reports/participant_profile.md` written · Sherpa-B profile v6 / project_details v2 · 12
+structured telemetry entries logged · orientation task `orient_start` effectively done ·
+commit `0bd4f47`.
+
+---
+
 <!-- END OF LOG -->
