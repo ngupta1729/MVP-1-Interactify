@@ -30,12 +30,15 @@ npm run dev                 # http://localhost:3000
 - Demo page: <http://localhost:3000>
 - MCP endpoint: `http://localhost:3000/api/mcp`
 
-### Try the MCP server without ChatGPT
+### Try the MCP server in an AI client
 
 ```bash
 npx @modelcontextprotocol/inspector
 # connect to http://localhost:3000/api/mcp (Streamable HTTP), call create_h5p_quiz
 ```
+
+To connect it to **Claude Code, Claude Desktop, or ChatGPT Plus** (plans + exact steps):
+see [`docs/testing-in-ai-clients.md`](docs/testing-in-ai-clients.md).
 
 ## Scripts
 

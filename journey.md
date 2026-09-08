@@ -12,7 +12,7 @@
 |---|---|
 | **Stage** | 0 — Get Started Building |
 | **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
-| **Next action** | Set `OPENAI_API_KEY` on Vercel · import a generated `.h5p` into h5p.com/Lumi to confirm it plays · record the demo (`sprint-demo-prep`) |
+| **Next action** | Test the MCP server in a client — Claude Desktop GUI, then ChatGPT Plus (`docs/testing-in-ai-clients.md`) · import a generated `.h5p` into h5p.com/Lumi to confirm it plays · record the demo (`sprint-demo-prep`) |
 | **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
