@@ -141,6 +141,13 @@ export default function Home() {
           )}
 
           {error && <div className="error">{error}</div>}
+          {error.includes("OPENAI_API_KEY") && (
+            <p className="muted" style={{ marginTop: 8 }}>
+              Set <code>OPENAI_API_KEY</code> (locally in <code>.env</code>, or on Vercel with{" "}
+              <code>vercel env add OPENAI_API_KEY production</code> then redeploy). The{" "}
+              <code>/api/mcp</code> ChatGPT App does not need it.
+            </p>
+          )}
         </div>
 
         <div className="panel">
