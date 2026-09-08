@@ -16,12 +16,21 @@ ships both a ChatGPT App *and* an MCP server.
    refine in words → export" feel valuable and natural enough that a teacher / course
    creator would use it instead of a separate H5P authoring tool?
 2. **Secondary — the capability-layer bet.** Is "H5P as an MCP capability layer that plugs
-   into whatever AI assistant the user already has (ChatGPT first), with the `.h5p` export
-   as the reason to come back to H5P" the right shape for the product — versus a
-   single-platform plugin?
+   into whatever AI assistant the user already has (ChatGPT first)" the right shape for the
+   product — versus a single-platform plugin?
 
 Output quality of individual questions is explicitly *not* the focus — that rides on the
 AI assistant and is easy to improve later.
+
+### Open strategic question (start probing it in the demo; don't claim an answer)
+
+`.h5p` is an **open format** — the output plays in Lumi, any LMS, self-hosted. So once the
+AI can generate a valid one, **what is the real reason a user would choose h5p.com / the
+vendor's hosted product at all?** Hosting isn't a moat. Candidate answers to test with
+users — the living edit/track/version loop, xAPI analytics, a validity/accessibility
+guarantee, or the capability layer being the product itself — are tracked in
+`reports/builder_priorities.md`. Treat this as a **Stage 1 user-research** question, not a
+demo claim.
 
 ## Portability (be precise in the demo)
 

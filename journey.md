@@ -88,7 +88,7 @@ concrete project idea and ship a first version to react to.
 | 2026-09-08 | **Stateless: a quiz's id = gzip+base64url of its `QuizSpec`** | Rebuilds on any Vercel instance; no DB / blob store to set up during a binge | In-memory Map (breaks across lambdas) · Vercel Blob (setup overhead) |
 | 2026-09-08 | Deploy target: **Vercel** (`project2608b.vercel.app`), production, no deployment protection | Public HTTPS URL needed for an MCP server; participant chose Vercel; CLI already authed | Self-host · ngrok tunnel |
 | 2026-09-08 | **Reframe: the product is H5P's AI capability layer over MCP**, not "an H5P ChatGPT App". ChatGPT is the first interface; Claude + other MCP clients next. | Kahoot ships both a ChatGPT App and an MCP server; OpenAI's Apps SDK is MCP-based and portable; a capability layer is bigger and more defensible than a single-platform plugin. Costs ~nothing — the v1 server already is a standard MCP server; the ChatGPT bits are additive `_meta` + a `ui://` component. | Stay "ChatGPT App" only |
-| 2026-09-08 | Studied the **Kahoot ChatGPT app** (support docs) as the reference UX. Confirms: draft-first (create/update only), ≤20 questions/prompt, inline preview, NL edits, ~2 question types, and a **button that opens the draft back in the platform**. Kahoot monetizes save/host (free tier = 5 questions), not generation. | Best concrete validation of the model; names the one UX gap in our v1 (manual `.h5p` download vs. one-click "open in h5p.com"). | — |
+| 2026-09-08 | Studied the **Kahoot ChatGPT app** (support docs) as the reference UX. Confirms: draft-first (create/update only), ≤20 questions/prompt, inline preview, NL edits, ~2 question types, and a **button that opens the draft back in the platform**. Kahoot monetizes save/host (free tier = 5 questions), not generation. | Best concrete validation of the model. Surfaces our v1 UX gap (manual `.h5p` download vs. one-click "open in [platform]") **and** the open monetisation/incentive question — Kahoot's format is proprietary so its host lock-in works; `.h5p` is open, so neither the gap's value nor the incentive is proven yet. Both → Stage 1 user research. | — |
 
 **Learnings & concepts**
 - **Sherpa-B** = agentic innovation-management platform. Idea → build → reach → monetize → fundraise, via guided/freestyle tasks + a telemetry layer.
@@ -106,6 +106,10 @@ concrete project idea and ship a first version to react to.
   h5p.com / Lumi.
 - ChatGPT App integration not yet tested inside ChatGPT (no paid dev-mode account) — the MCP
   server is real and Inspector-tested; ChatGPT-side is narrated/recorded for now.
+- **Monetisation / incentive:** once AI generates a portable `.h5p`, what makes a user pay
+  for (or return to) the vendor's product? Hosting isn't a moat — open format. Candidates:
+  living edit/track loop, xAPI analytics, a validity/accessibility guarantee, or selling the
+  capability layer directly. Stage 1 user-research question — see `reports/builder_priorities.md`.
 - No users lined up yet for the Final Demo test.
 - Telemetry backup can't reach the server: "no sherpa-b MCP credentials found" — events log locally only. Consider `/shb-doctor`.
 
@@ -156,7 +160,11 @@ App". The v1 code already is exactly this; the change is positioning + roadmap. 
 *and* an MCP server): it's draft-first, ≤20 questions/prompt, inline preview, natural-language
 edits, ~2 question types, and a button that opens the draft back in Kahoot; Kahoot monetizes
 saving/hosting, not generation. The one UX gap in our v1 vs. Kahoot: we hand back a `.h5p`
-file to import by hand, rather than a one-click "open in h5p.com" — that's the target for Walk.
+file to import by hand, rather than a one-click "open in \[platform\]". Closing that round-trip
+is a **candidate** for Walk — but the participant flagged that, unlike Kahoot's proprietary
+format, `.h5p` is open, so "come back to h5p.com" isn't a moat and it's not yet clear what the
+real vendor incentive is. Both — does the round-trip loop matter to teachers, and what is the
+incentive — are Stage 1 user-research questions (see `reports/builder_priorities.md`).
 
 **2026-09-08 (orientation) —** Started on an empty repo. Connected Sherpa-B (`project-init` → *created*),
 project `project2608b` bound to the repo. Set up the journey record (two files, Mermaid spine)
