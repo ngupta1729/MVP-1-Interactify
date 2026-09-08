@@ -1,7 +1,9 @@
-# H5P ChatGPT App — first version
+# H5P AI capability layer (MCP) — first version
 
-Turn learning content into an interactive **H5P activity** without leaving the chat,
+Turn learning content into an interactive **H5P activity** from inside any AI assistant,
 then export a standard `.h5p` file. First activity type: **Question Set** (multiple-choice quiz).
+ChatGPT is the first interface; Claude and other MCP clients connect to the same server.
+Same model as Kahoot, which ships both a ChatGPT App and an MCP server.
 
 This repo is both the Sherpa-B project workspace (`journey.md`, `reports/`, `specs/`) and
 the app itself.
@@ -10,8 +12,8 @@ the app itself.
 
 | Path | What it is | Needs |
 |---|---|---|
-| `/api/mcp` | **The product.** An MCP server = a ChatGPT App. ChatGPT writes the questions from the user's content and calls `create_h5p_quiz`; the server builds the `.h5p` and returns an inline preview + download. | Nothing — ChatGPT is the model |
-| `/` + `/api/demo` | **Demo harness.** Stands in for ChatGPT with a direct OpenAI call so the full flow can be shown without a paid ChatGPT developer-mode account. | `OPENAI_API_KEY` |
+| `/api/mcp` | **The product.** A standard MCP server. The AI assistant writes the questions from the user's content and calls `create_h5p_quiz`; the server builds the `.h5p` and returns a download link (+ an inline preview in ChatGPT). Works with any MCP client. | Nothing — the assistant is the model |
+| `/` + `/api/demo` | **Demo harness.** Stands in for the AI assistant with a direct OpenAI call so the full flow can be shown without connecting a real client. | `OPENAI_API_KEY` |
 
 Both paths share one builder: `lib/h5p/buildQuiz.ts` → a valid, self-contained `.h5p`
 (runtime libraries vendored in `lib/h5p/vendor/h5p-libraries.zip`, sourced from the

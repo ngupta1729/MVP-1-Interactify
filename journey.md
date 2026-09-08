@@ -13,7 +13,7 @@
 | **Stage** | 0 — Get Started Building |
 | **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
 | **Next action** | Set `OPENAI_API_KEY` on Vercel · import a generated `.h5p` into h5p.com/Lumi to confirm it plays · record the demo (`sprint-demo-prep`) |
-| **Project idea** | **H5P ChatGPT App** — turn AI content/conversation directly into interactive H5P activities; create, refine conversationally, export `.h5p`. ChatGPT App model (like Kahoot's). Autonomy: **Level 2 — Collaborator**. |
+| **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
 
@@ -64,7 +64,7 @@ concrete project idea and ship a first version to react to.
 **Milestones**
 - [x] **Sherpa-B project initialized & bound** — 2026-09-08
 - [x] **Orientation complete** — workspace dirs, profile, project idea, autonomy level — 2026-09-08
-- [x] **First version built & deployed** — H5P quiz ChatGPT App (MCP) + demo harness, live on Vercel — 2026-09-08
+- [x] **First version built & deployed** — H5P quiz MCP server (ChatGPT-ready) + demo harness, live on Vercel — 2026-09-08
   - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` plays in h5p.com/Lumi · record demo
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
@@ -87,6 +87,8 @@ concrete project idea and ship a first version to react to.
 | 2026-09-08 | **`.h5p` built from the official H5P Hub bundle**, runtime libs vendored (`lib/h5p/vendor`) | Directly de-risks the #1 quality risk (valid `.h5p`); guaranteed-correct library set + versions | Hand-write `h5p.json` deps (fragile) · library-light package (import-only) |
 | 2026-09-08 | **Stateless: a quiz's id = gzip+base64url of its `QuizSpec`** | Rebuilds on any Vercel instance; no DB / blob store to set up during a binge | In-memory Map (breaks across lambdas) · Vercel Blob (setup overhead) |
 | 2026-09-08 | Deploy target: **Vercel** (`project2608b.vercel.app`), production, no deployment protection | Public HTTPS URL needed for an MCP server; participant chose Vercel; CLI already authed | Self-host · ngrok tunnel |
+| 2026-09-08 | **Reframe: the product is H5P's AI capability layer over MCP**, not "an H5P ChatGPT App". ChatGPT is the first interface; Claude + other MCP clients next. | Kahoot ships both a ChatGPT App and an MCP server; OpenAI's Apps SDK is MCP-based and portable; a capability layer is bigger and more defensible than a single-platform plugin. Costs ~nothing — the v1 server already is a standard MCP server; the ChatGPT bits are additive `_meta` + a `ui://` component. | Stay "ChatGPT App" only |
+| 2026-09-08 | Studied the **Kahoot ChatGPT app** (support docs) as the reference UX. Confirms: draft-first (create/update only), ≤20 questions/prompt, inline preview, NL edits, ~2 question types, and a **button that opens the draft back in the platform**. Kahoot monetizes save/host (free tier = 5 questions), not generation. | Best concrete validation of the model; names the one UX gap in our v1 (manual `.h5p` download vs. one-click "open in h5p.com"). | — |
 
 **Learnings & concepts**
 - **Sherpa-B** = agentic innovation-management platform. Idea → build → reach → monetize → fundraise, via guided/freestyle tasks + a telemetry layer.
@@ -133,18 +135,28 @@ earlier stages complete.
 
 ## Running summary
 
-**2026-09-08 (build) —** Built and deployed the **first version**. It's a real ChatGPT App:
-an MCP server at `/api/mcp` with one tool, `create_h5p_quiz`, that turns a structured
-question list (which ChatGPT writes from the user's content) into a valid, self-contained
-`.h5p` **Question Set** and returns an inline preview + download. Because the participant has
-no paid ChatGPT developer-mode account, there's also a **demo harness** (`/` + `/api/demo`)
-that uses a direct OpenAI call in place of ChatGPT, with a live embedded H5P player and a
+**2026-09-08 (build) —** Built and deployed the **first version**: a standard MCP server at
+`/api/mcp` with one tool, `create_h5p_quiz`, that turns a structured question list (which the
+AI assistant writes from the user's content) into a valid, self-contained `.h5p` **Question
+Set** and returns a download link — plus an inline preview when the client is ChatGPT. Any
+MCP client can connect. Because the participant has no paid ChatGPT developer-mode account,
+there's also a **demo harness** (`/` + `/api/demo`) that uses a direct OpenAI call in place
+of the assistant, with a live embedded H5P player and a
 conversational refine loop. The `.h5p` builder stitches generated JSON into the official H5P
 Hub library bundle (vendored), and the whole app is stateless — a quiz's id *is* its
 compressed spec, so it rebuilds on any serverless instance. Verified end-to-end locally and
 on the deployed URL (`https://project2608b.vercel.app`). Remaining before the cohort demo:
 set `OPENAI_API_KEY` on Vercel, confirm a generated `.h5p` plays in h5p.com / Lumi, record
 the walkthrough.
+
+Later that day, **reframed the product**: it's H5P's *AI capability layer over MCP*, with
+ChatGPT as the first interface (Claude and other MCP clients next) — not "an H5P ChatGPT
+App". The v1 code already is exactly this; the change is positioning + roadmap. Studied the
+**Kahoot ChatGPT app** as the reference UX (they run the same dual model — a ChatGPT App
+*and* an MCP server): it's draft-first, ≤20 questions/prompt, inline preview, natural-language
+edits, ~2 question types, and a button that opens the draft back in Kahoot; Kahoot monetizes
+saving/hosting, not generation. The one UX gap in our v1 vs. Kahoot: we hand back a `.h5p`
+file to import by hand, rather than a one-click "open in h5p.com" — that's the target for Walk.
 
 **2026-09-08 (orientation) —** Started on an empty repo. Connected Sherpa-B (`project-init` → *created*),
 project `project2608b` bound to the repo. Set up the journey record (two files, Mermaid spine)
@@ -166,3 +178,4 @@ Committed as `0bd4f47`. Next: `/coach`, then start building the first version vi
 | 2026-09-08 | Obsidian vault set to project root; `.gitignore` added; `2608b/` subfolder removed |
 | 2026-09-08 | Orientation workout complete: workspace, profile, project idea (H5P ChatGPT App), Level 2 autonomy, Crawl MVP goal. Commit `0bd4f47`. |
 | 2026-09-08 | First version built: Next.js app at repo root — MCP server (`create_h5p_quiz`) + demo harness + `.h5p` Question Set builder. Deployed to `project2608b.vercel.app`. `specs/mvi_spec.md` added. |
+| 2026-09-08 | Product reframed to "H5P AI capability layer (MCP), ChatGPT first"; `specs/mvi_spec.md`, `journey.md`, `README.md` updated. Kahoot ChatGPT app studied as reference UX. |
