@@ -140,4 +140,52 @@ commit `0bd4f47`.
 
 ---
 
+## 2026-09-08 — Session `session_01YbJizzsKChkKVuJ7KzmZpZ`
+
+### Entry 7 — "Build the first version of your app"
+
+**Asked (user):** "Build the first version of your app" (Sherpa-B task
+`build_the_first_version_of_your_app`, freestyle, critical path, effort L).
+
+**Answer (Claude):** Followed the task procedure. Confirmed the demo objective (primary:
+does the conversational content→activity→refine→export handoff feel valuable; secondary:
+the "bring H5P to where users are" distribution bet) and scoped to one activity type
+(Question Set / multiple choice). Key architecture decision surfaced by the participant's
+question about API keys: **in the ChatGPT App model, ChatGPT is the model** — it writes the
+questions and calls the tool; our server never runs an LLM and needs no API key.
+
+Built and deployed:
+- **`/api/mcp`** — the real ChatGPT App: an MCP server (`mcp-handler`) exposing
+  `create_h5p_quiz` + an inline preview component (`ui://widget/quiz.html`).
+- **`/` + `/api/demo`** — a demo harness that uses a direct OpenAI call to stand in for
+  ChatGPT (needed because the participant has no paid ChatGPT developer-mode account), with
+  an embedded live H5P player (`h5p-standalone`) and a refine loop.
+- **`lib/h5p/buildQuiz.ts`** — `QuizSpec` → valid, self-contained `.h5p` (H5P Question Set),
+  runtime libraries vendored from the official **H5P Hub** bundle
+  (`lib/h5p/vendor/h5p-libraries.zip`, 8 libs, full dependency closure).
+- **Stateless design:** a quiz's id *is* its content (gzip+base64url of the `QuizSpec`), so
+  it rebuilds on any Vercel instance — no database, no blob store.
+
+Verified: `npm run h5p:smoke`, MCP `tools/list` + `tools/call`, `/api/demo`, `.h5p`
+download and per-file player serving — all working locally **and on the deployed URL**
+across separate lambda instances. Generated `content.json` structurally diffed against the
+Hub reference bundle: clean subset.
+
+Deployed to Vercel: **https://project2608b.vercel.app** (production, no deployment
+protection).
+
+**Changed:** Next.js app added at repo root; `specs/mvi_spec.md`, `README.md`,
+`.env.example` written; deployed to Vercel. Task `build_the_first_version_of_your_app` →
+in_progress.
+
+**Open / handover:**
+- Participant must set `OPENAI_API_KEY` on Vercel for the demo page's generate-from-content
+  path. MCP path + `spec` escape hatch work without it.
+- Manual verification still needed: import a generated `.h5p` into **h5p.com** and **Lumi**
+  and confirm it plays/scores (structurally validated; not yet opened in a real player —
+  the browser extension wasn't available this session).
+- Then: connect `/api/mcp` in MCP Inspector for the demo, and record the 60–90s walkthrough.
+
+---
+
 <!-- END OF LOG -->
