@@ -11,6 +11,7 @@
     "h5p:smoke": "node scripts/smoke-build-h5p.mjs"
   },
   "dependencies": {
+    "h5p-standalone": "^3.8.2",
     "jszip": "^3.10.1",
     "mcp-handler": "^1.0.1",
     "next": "^15.5.0",

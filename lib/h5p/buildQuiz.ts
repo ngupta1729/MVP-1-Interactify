@@ -71,7 +71,6 @@ const CONFIRM_RETRY = {
 };
 
 function multiChoiceQuestion(q: QuizSpec["questions"][number]) {
-  const multipleCorrect = q.answers.filter((a) => a.correct).length > 1;
   return {
     library: "H5P.MultiChoice 1.16",
     subContentId: randomUUID(),
@@ -92,7 +91,7 @@ function multiChoiceQuestion(q: QuizSpec["questions"][number]) {
         enableRetry: true,
         enableSolutionsButton: true,
         enableCheckButton: true,
-        type: multipleCorrect ? "multi" : "single",
+        type: "auto",
         singlePoint: false,
         randomAnswers: true,
         showSolutionsRequiresInput: true,
@@ -177,6 +176,11 @@ export interface BuiltH5p {
   h5pJson: unknown;
 }
 
+export interface BuiltFiles {
+  filename: string;
+  files: Map<string, Buffer>;
+}
+
 function slugify(s: string): string {
   return (
     s
@@ -187,32 +191,51 @@ function slugify(s: string): string {
   );
 }
 
-let vendorZipCache: Buffer | null = null;
-async function loadVendorZip(): Promise<Buffer> {
-  if (!vendorZipCache) vendorZipCache = await readFile(VENDOR_ZIP);
-  return vendorZipCache;
+// The vendored library files, extracted once per process.
+let vendorFilesCache: Map<string, Buffer> | null = null;
+async function loadVendorFiles(): Promise<Map<string, Buffer>> {
+  if (vendorFilesCache) return vendorFilesCache;
+  const zip = await JSZip.loadAsync(await readFile(VENDOR_ZIP));
+  const files = new Map<string, Buffer>();
+  await Promise.all(
+    Object.values(zip.files).map(async (f) => {
+      if (!f.dir) files.set(f.name, await f.async("nodebuffer"));
+    }),
+  );
+  vendorFilesCache = files;
+  return files;
 }
 
-export async function buildQuizH5p(rawSpec: QuizSpec): Promise<BuiltH5p> {
+/** The full set of files that make up the .h5p, unpacked. */
+export async function buildQuizFiles(rawSpec: QuizSpec): Promise<BuiltFiles> {
   const spec = validateQuiz(rawSpec);
+  const files = new Map(await loadVendorFiles());
+  files.set("h5p.json", Buffer.from(JSON.stringify(buildH5pJson(spec)), "utf8"));
+  files.set(
+    "content/content.json",
+    Buffer.from(JSON.stringify(buildContentJson(spec)), "utf8"),
+  );
+  return { filename: `${slugify(spec.title)}.h5p`, files };
+}
 
-  const zip = await JSZip.loadAsync(await loadVendorZip());
-  // vendor zip holds only the library folders; add our manifest + content.
-  const h5pJson = buildH5pJson(spec);
-  const contentJson = buildContentJson(spec);
-  zip.file("h5p.json", JSON.stringify(h5pJson));
-  zip.file("content/content.json", JSON.stringify(contentJson));
-
-  const buffer = await zip.generateAsync({
+/** Zip a set of unpacked files into a .h5p buffer. */
+export async function packFiles(files: Map<string, Buffer>): Promise<Buffer> {
+  const zip = new JSZip();
+  for (const [name, data] of files) zip.file(name, data);
+  return zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",
     compressionOptions: { level: 6 },
   });
+}
 
+export async function buildQuizH5p(rawSpec: QuizSpec): Promise<BuiltH5p> {
+  const spec = validateQuiz(rawSpec);
+  const { filename, files } = await buildQuizFiles(spec);
   return {
-    filename: `${slugify(spec.title)}.h5p`,
-    buffer,
-    contentJson,
-    h5pJson,
+    filename,
+    buffer: await packFiles(files),
+    contentJson: JSON.parse(files.get("content/content.json")!.toString("utf8")),
+    h5pJson: JSON.parse(files.get("h5p.json")!.toString("utf8")),
   };
 }
