@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
     "/api/mcp": ["./lib/h5p/vendor/**"],
     "/api/demo": ["./lib/h5p/vendor/**"],
   },
+  // The h5p-standalone runtime is loaded cross-origin by the ChatGPT widget.
+  async headers() {
+    return [
+      {
+        source: "/h5p-standalone/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -10,6 +10,16 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const WIDGET_URI = "ui://widget/quiz.html";
+const APP_ORIGIN = new URL(baseUrl()).origin;
+
+// Lets the ChatGPT widget load the h5p-standalone player + package files from our
+// origin even when "Enforce CSP in developer mode" is on.
+const WIDGET_CSP = {
+  "openai/widgetCSP": {
+    connect_domains: [APP_ORIGIN],
+    resource_domains: [APP_ORIGIN],
+  },
+};
 
 const handler = createMcpHandler(
   (server) => {
@@ -17,10 +27,15 @@ const handler = createMcpHandler(
     server.registerResource(
       "quiz-widget",
       WIDGET_URI,
-      { title: "H5P quiz preview", mimeType: "text/html+skybridge" },
+      { title: "H5P quiz preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
       async () => ({
         contents: [
-          { uri: WIDGET_URI, mimeType: "text/html+skybridge", text: QUIZ_WIDGET_HTML },
+          {
+            uri: WIDGET_URI,
+            mimeType: "text/html+skybridge",
+            text: QUIZ_WIDGET_HTML,
+            _meta: WIDGET_CSP,
+          },
         ],
       }),
     );
@@ -56,6 +71,7 @@ const handler = createMcpHandler(
           passPercentage: spec.passPercentage,
           downloadUrl,
           playUrl,
+          playerUrl: `${base}/api/h5p/${token}/player`,
           filename: built.filename,
           questions: spec.questions.map((q) => ({
             question: q.question,
