@@ -93,20 +93,22 @@ The widget now has a **"▶ Play here"** toggle that swaps the answer-key previe
 `/play` link stay available.
 
 **How:**
-- `lib/h5p/widget.ts` — "Play here" button lazy-loads `…/h5p-standalone/main.bundle.js` and
-  mounts the player at `structuredContent.playerUrl` (`/api/h5p/<token>/player`).
-- Tool returns `playerUrl` (absolute) in `structuredContent`.
-- Widget resource declares `openai/widgetCSP` (`connect_domains` / `resource_domains` = our
-  origin) so it works even if "Enforce CSP in developer mode" is ON.
-- `next.config.ts` sets `Access-Control-Allow-Origin: *` on `/h5p-standalone/*`; the
-  `/api/h5p/.../player` route already does.
+- **First attempt** — "Play here" lazy-loaded `h5p-standalone/main.bundle.js` into the
+  widget. **Hung** ("Loading player…" forever) — dynamic `<script>` injection doesn't work
+  in ChatGPT's skybridge sandbox.
+- **Fix (2026-09-09)** — "Play here" now renders an `<iframe src="/play/<token>?embed=1">`.
+  Everything inside the iframe is same-origin, so no cross-origin script/CORS juggling.
+  `/play` got an `?embed` compact mode (player only, no page chrome). Our pages send no
+  `X-Frame-Options`, so they're iframe-able.
+- `openai/widgetCSP` still declared (our origin) for the CSP-on case; `structuredContent`
+  still carries `playerUrl` and `playUrl`.
 
-**Verified server-side (2026-09-09):** `playerUrl` present; widget CSP points at the prod
-origin; player assets + package files send `ACAO: *`.
+**Verified server-side (2026-09-09):** widget resource uses the iframe; `/play?embed=1`
+returns 200 and is iframe-able.
 
-**Open test:** re-run the tool in ChatGPT, click **▶ Play here** in the card, confirm the
-quiz renders and is answerable inside the chat. Watch the widget console for CSP/CORS blocks
-if it fails.
+**Open test:** re-run the tool in ChatGPT, click **▶ Play here** — the quiz should load in an
+iframe inside the card and be answerable. If still blank, right-click the card → Inspect →
+Console for the blocked request.
 
 ---
 
