@@ -24,6 +24,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   li.wrong::before { content: "\\2022"; position: absolute; left: 6px; opacity: .5; }
   .actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   a.dl { background: #10a37f; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+  a.play { border: 1px solid #10a37f; color: #10a37f; text-decoration: none; padding: 7px 13px; border-radius: 8px; font-weight: 600; }
   .hint { font-size: 12px; opacity: .7; }
 </style>
 </head>
@@ -45,6 +46,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="sub">'+ (d.questionCount||0) +' questions \\u00b7 pass mark '+ (d.passPercentage||60) +'%  \\u00b7  H5P Question Set</div>'+
       qs +
       '<div class="actions">'+
+        (d.playUrl ? '<a class="play" href="'+esc(d.playUrl)+'" target="_blank" rel="noopener">▶ Play</a>' : '')+
         (d.downloadUrl ? '<a class="dl" href="'+esc(d.downloadUrl)+'" target="_blank" rel="noopener">Download .h5p</a>' : '')+
         '<span class="hint">Import into h5p.com or Lumi, or drop it into any LMS that supports H5P.</span>'+
       '</div>';

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import H5pPlayer from "@/components/H5pPlayer";
 
 interface QuizAnswer { text: string; correct: boolean; feedback?: string }
 interface QuizQuestion { question: string; answers: QuizAnswer[] }
@@ -16,12 +17,7 @@ interface DemoResult {
   filename: string;
   downloadUrl: string;
   playerPath: string;
-}
-
-declare global {
-  interface Window {
-    H5PStandalone?: { H5P: new (el: HTMLElement, opts: Record<string, unknown>) => Promise<unknown> };
-  }
+  playUrl: string;
 }
 
 const SAMPLE = `The water cycle describes how water moves continuously on Earth.
@@ -38,32 +34,6 @@ export default function Home() {
   const [result, setResult] = useState<DemoResult | null>(null);
   const [loading, setLoading] = useState<"" | "generate" | "refine">("");
   const [error, setError] = useState("");
-  const [playerReady, setPlayerReady] = useState(false);
-  const hostRef = useRef<HTMLDivElement>(null);
-
-  // Load the H5P player runtime once.
-  useEffect(() => {
-    if (window.H5PStandalone) { setPlayerReady(true); return; }
-    const s = document.createElement("script");
-    s.src = "/h5p-standalone/main.bundle.js";
-    s.onload = () => setPlayerReady(true);
-    s.onerror = () => setError("Could not load the H5P player runtime.");
-    document.body.appendChild(s);
-  }, []);
-
-  // (Re)render the embedded activity whenever we have a new result.
-  useEffect(() => {
-    if (!result || !playerReady || !hostRef.current || !window.H5PStandalone) return;
-    const host = hostRef.current;
-    host.innerHTML = "";
-    const mount = document.createElement("div");
-    host.appendChild(mount);
-    new window.H5PStandalone.H5P(mount, {
-      h5pJsonPath: result.playerPath,
-      frameJs: "/h5p-standalone/frame.bundle.js",
-      frameCss: "/h5p-standalone/styles/h5p.css",
-    }).catch((e: unknown) => setError(`Preview failed to render: ${(e as Error).message}`));
-  }, [result, playerReady]);
 
   const run = useCallback(
     async (mode: "generate" | "refine") => {
@@ -94,11 +64,11 @@ export default function Home() {
 
   return (
     <div className="wrap">
-      <h1>H5P ChatGPT App <span className="pill">demo harness</span></h1>
+      <h1>H5P AI capability layer <span className="pill">demo harness</span></h1>
       <p className="lede">
         Paste learning content &rarr; get an interactive H5P activity &rarr; refine it in words &rarr;
-        export a real <code>.h5p</code> file. In the shipped product this all happens inside ChatGPT;
-        here a direct model call stands in for that step.
+        export a real <code>.h5p</code> file. In the product this happens inside an AI assistant
+        (ChatGPT, Claude) via MCP; here a direct model call stands in for that step.
       </p>
 
       <div className="grid">
@@ -161,16 +131,17 @@ export default function Home() {
                   · {result.spec.questions.length} questions · pass {result.spec.passPercentage}%
                 </span>
               </div>
-              <div className="h5p-host" ref={hostRef} />
+              <H5pPlayer key={result.id} playerPath={result.playerPath} />
               <div className="row">
                 <a className="dl" href={result.downloadUrl}>Download .h5p</a>
+                <a href={result.playUrl} target="_blank" rel="noopener">Open full-page preview ↗</a>
                 <span className="muted">
-                  Import into <a href="https://h5p.com" target="_blank" rel="noopener">h5p.com</a> or{" "}
-                  <a href="https://lumi.education" target="_blank" rel="noopener">Lumi</a>.
+                  or import into <a href="https://h5p.com" target="_blank" rel="noopener">h5p.com</a> /{" "}
+                  <a href="https://lumi.education" target="_blank" rel="noopener">Lumi</a>
                 </span>
               </div>
               <details>
-                <summary>What the ChatGPT tool call looks like</summary>
+                <summary>What the tool call returns</summary>
                 <pre>{JSON.stringify(result.spec, null, 2)}</pre>
               </details>
             </>

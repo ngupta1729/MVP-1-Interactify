@@ -45,18 +45,37 @@ const handler = createMcpHandler(
         const spec = quizSpecSchema.parse(args);
         // Build the file set here so bad input fails loudly inside the tool call.
         const built = await buildQuizFiles(spec);
-        const downloadUrl = `${baseUrl()}/api/h5p/${encodeSpec(spec)}`;
+        const token = encodeSpec(spec);
+        const base = baseUrl();
+        const downloadUrl = `${base}/api/h5p/${token}`;
+        const playUrl = `${base}/play/${token}`;
 
         const structured = {
           title: spec.title,
           questionCount: spec.questions.length,
           passPercentage: spec.passPercentage,
           downloadUrl,
+          playUrl,
           filename: built.filename,
           questions: spec.questions.map((q) => ({
             question: q.question,
             answers: q.answers.map((a) => ({ text: a.text, correct: a.correct })),
           })),
+        };
+
+        // MCP-UI resource: clients that support it (some Claude Desktop builds,
+        // MCP-UI renderers) show the quiz inline in a panel. Others ignore it and
+        // use the text + links below.
+        const uiResource = {
+          type: "resource" as const,
+          resource: {
+            uri: `ui://h5p-quiz/${token}`,
+            mimeType: "text/html",
+            text:
+              `<!doctype html><html><head><meta charset="utf-8">` +
+              `<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100vh;display:block}</style>` +
+              `</head><body><iframe src="${playUrl}" allowfullscreen></iframe></body></html>`,
+          },
         };
 
         return {
@@ -65,8 +84,10 @@ const handler = createMcpHandler(
               type: "text",
               text:
                 `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
-                `pass mark ${spec.passPercentage}%. Download: ${downloadUrl}`,
+                `pass mark ${spec.passPercentage}%.\n` +
+                `Play in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`,
             },
+            uiResource,
           ],
           structuredContent: structured,
           _meta: { "openai/outputTemplate": WIDGET_URI },

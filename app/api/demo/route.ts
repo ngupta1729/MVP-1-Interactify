@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       filename: built.filename,
       downloadUrl: `${baseUrl()}/api/h5p/${token}`,
       playerPath: `/api/h5p/${token}/player`,
+      playUrl: `${baseUrl()}/play/${token}`,
     });
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
