@@ -51,10 +51,11 @@ check, score. Works from Claude Desktop, ChatGPT, MCP Inspector, anywhere the li
 - `playUrl` added to the tool's text output and `structuredContent`; demo API + ChatGPT
   widget get a **▶ Play** button.
 
-**Validated:** `/play/<token>` renders on the deployed URL; player assets serve; bad tokens
-show a friendly message.
+**Validated (2026-09-09):** confirmed working from Claude Desktop — the `▶ Play` link opens
+the quiz and it plays interactively (answer / check / score). This also confirms the
+generated `.h5p` **actually plays**, not just that it's structurally valid.
 
-**Not closed:** the preview is a browser tab, not embedded in the chat. That's MVP 1.2.
+**Not closed:** the preview is a browser tab, not embedded in the chat. That was MVP 1.2.
 
 ---
 
@@ -70,9 +71,16 @@ and fall back to the text + Play link from MVP 1.1.
 `ui://widget/quiz.html` (`text/html+skybridge`) template. All three coexist; each client
 picks what it understands.
 
-**Status:** deployed. **Whether Claude Desktop actually renders the inline panel is the open
-test** — depends on the Claude Desktop version's MCP-UI support. If it doesn't light up,
-MVP 1.1's Play link is the working path and nothing regresses.
+**Result (2026-09-09): Claude Desktop does NOT render it.** Tested — no inline panel; the
+tool result shows the text + the `▶ Play` link only. Claude Desktop doesn't render
+tool-result HTML/UI resources inline today (the MCP-UI `text/html` resource convention is
+supported by some other clients, not Claude). Not a regression — MVP 1.1's link is the
+working path. The resource stays in the response (harmless; costs nothing) in case Claude
+adds support.
+
+**Where the inline experience will actually come from:** ChatGPT, via the
+`text/html+skybridge` widget — to be tested with ChatGPT Plus. So: **Claude = link-based,
+ChatGPT = inline card.** That's the current reality of "works everywhere".
 
 ---
 

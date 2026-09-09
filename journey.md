@@ -66,9 +66,9 @@ concrete project idea and ship a first version to react to.
 - [x] **Orientation complete** — workspace dirs, profile, project idea, autonomy level — 2026-09-08
 - [x] **First version built & deployed** — H5P quiz MCP server (ChatGPT-ready) + demo harness, live on Vercel — 2026-09-08
 - [x] **MVP 1 (Claude Desktop)** — tool connected to Claude Desktop, generated a 7-question quiz end to end — 2026-09-09
-- [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link returned by the tool — 2026-09-09
-- [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource (experimental; Claude-render unverified) — 2026-09-09
-  - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` plays in h5p.com/Lumi · confirm MVP 1.2 inline panel in Claude Desktop · test in ChatGPT Plus · record demo
+- [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link — **works**; quiz plays, so the `.h5p` is confirmed to play (not just structurally valid) — 2026-09-09
+- [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource — **Claude Desktop does not render it**; resource left in place, inline experience will come from ChatGPT's skybridge widget instead — 2026-09-09
+  - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · test in ChatGPT Plus (incl. the inline card) · record demo
   - full log: `docs/mvp-log.md`
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
@@ -179,8 +179,12 @@ is ChatGPT-only `+skybridge`). Added two increments: **MVP 1.1** — the tool re
 `/play/<token>` link that opens the quiz fully interactive in a browser tab (new
 `app/play/[token]` page + shared `components/H5pPlayer`); **MVP 1.2** — the tool also returns
 an MCP-UI resource (`ui://h5p-quiz/<token>`, HTML iframing the play page) so MCP-UI-capable
-clients can render the quiz inline — experimental, Claude-Desktop rendering still to be
-confirmed. Both deployed and verified on the production URL. Milestone log started at
+clients can render the quiz inline. Tested from Claude Desktop: **MVP 1.1 works** — the Play
+link opens the quiz and it plays (which also confirms the generated `.h5p` genuinely plays,
+not just validates structurally). **MVP 1.2 does not** — Claude Desktop doesn't render
+tool-result UI resources inline; the resource is left in the response for other clients, and
+the real inline experience will come from ChatGPT's skybridge widget (to test with Plus). So
+the current picture: Claude = link-based, ChatGPT = inline card. Milestone log:
 `docs/mvp-log.md`.
 
 **2026-09-08 (orientation) —** Started on an empty repo. Connected Sherpa-B (`project-init` → *created*),
