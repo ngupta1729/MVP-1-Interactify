@@ -9,7 +9,9 @@ import { baseUrl } from "@/lib/baseUrl";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const WIDGET_URI = "ui://widget/quiz.html";
+// Bump the version segment whenever the widget HTML changes — ChatGPT caches
+// component templates by URI, so a new URI forces a re-fetch.
+const WIDGET_URI = "ui://widget/quiz-v3.html";
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone player + package files from our
