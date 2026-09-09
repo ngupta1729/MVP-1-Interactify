@@ -69,8 +69,8 @@ concrete project idea and ship a first version to react to.
 - [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link — **works**; quiz plays, so the `.h5p` is confirmed to play (not just structurally valid) — 2026-09-09
 - [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource — **Claude Desktop does not render it**; inline experience comes from ChatGPT instead — 2026-09-09
 - [x] **MVP 1 (ChatGPT)** — connector added (in the **Work/Business workspace**); ChatGPT calls the tool and **renders the inline card** (answer key + Play/Download) — 2026-09-09
-- [~] **MVP 1.1 (ChatGPT)** — "▶ Play here" toggle embeds the real interactive player in the card; deployed, awaiting an in-ChatGPT test — 2026-09-09
-  - remaining: confirm MVP 1.1 (ChatGPT) plays in the card · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
+- [~] **MVP 1.1 (ChatGPT)** — "▶ Take the quiz" in the card: a self-contained JS quiz runner (answer/check/score) — the skybridge sandbox blocks embedding the real H5P runtime (external script AND iframe), so this mirrors Kahoot's self-contained inline preview; deployed, awaiting an in-ChatGPT test — 2026-09-09
+  - remaining: confirm MVP 1.1 (ChatGPT) works in the card · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
   - full log: `docs/mvp-log.md` (Track A = Claude Desktop, Track B = ChatGPT)
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
