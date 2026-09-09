@@ -12,6 +12,9 @@ export const maxDuration = 60;
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
 const WIDGET_URI = "ui://widget/quiz-v3.html";
+// URIs used by earlier builds. Old chats bound their card to one of these; keep
+// serving the current HTML at each so those cards re-render instead of going blank.
+const LEGACY_WIDGET_URIS = ["ui://widget/quiz.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone player + package files from our
@@ -41,6 +44,21 @@ const handler = createMcpHandler(
         ],
       }),
     );
+
+    // Same widget, served at the URIs older builds used, so previously rendered
+    // cards in existing chats don't go blank after a version bump.
+    LEGACY_WIDGET_URIS.forEach((uri, i) => {
+      server.registerResource(
+        `quiz-widget-legacy-${i}`,
+        uri,
+        { title: "H5P quiz preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+        async () => ({
+          contents: [
+            { uri, mimeType: "text/html+skybridge", text: QUIZ_WIDGET_HTML, _meta: WIDGET_CSP },
+          ],
+        }),
+      );
+    });
 
     server.registerTool(
       "create_h5p_quiz",
