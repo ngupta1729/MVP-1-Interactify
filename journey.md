@@ -12,7 +12,7 @@
 |---|---|
 | **Stage** | 0 — Get Started Building |
 | **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
-| **Next action** | In Claude Desktop, re-run the tool and check: (a) the `▶ Play` link opens the interactive quiz, (b) whether the inline MCP-UI panel renders · import a `.h5p` into h5p.com/Lumi to confirm it plays · then test in ChatGPT Plus · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
+| **Next action** | In ChatGPT (Work workspace): re-run the tool, click **▶ Play here** in the card — confirm the quiz plays inline (MVP 1.1 ChatGPT) · import a `.h5p` into h5p.com/Lumi · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
 | **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
@@ -67,9 +67,11 @@ concrete project idea and ship a first version to react to.
 - [x] **First version built & deployed** — H5P quiz MCP server (ChatGPT-ready) + demo harness, live on Vercel — 2026-09-08
 - [x] **MVP 1 (Claude Desktop)** — tool connected to Claude Desktop, generated a 7-question quiz end to end — 2026-09-09
 - [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link — **works**; quiz plays, so the `.h5p` is confirmed to play (not just structurally valid) — 2026-09-09
-- [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource — **Claude Desktop does not render it**; resource left in place, inline experience will come from ChatGPT's skybridge widget instead — 2026-09-09
-  - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · test in ChatGPT Plus (incl. the inline card) · record demo
-  - full log: `docs/mvp-log.md`
+- [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource — **Claude Desktop does not render it**; inline experience comes from ChatGPT instead — 2026-09-09
+- [x] **MVP 1 (ChatGPT)** — connector added (in the **Work/Business workspace**); ChatGPT calls the tool and **renders the inline card** (answer key + Play/Download) — 2026-09-09
+- [~] **MVP 1.1 (ChatGPT)** — "▶ Play here" toggle embeds the real interactive player in the card; deployed, awaiting an in-ChatGPT test — 2026-09-09
+  - remaining: confirm MVP 1.1 (ChatGPT) plays in the card · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
+  - full log: `docs/mvp-log.md` (Track A = Claude Desktop, Track B = ChatGPT)
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
 
@@ -183,9 +185,17 @@ clients can render the quiz inline. Tested from Claude Desktop: **MVP 1.1 works*
 link opens the quiz and it plays (which also confirms the generated `.h5p` genuinely plays,
 not just validates structurally). **MVP 1.2 does not** — Claude Desktop doesn't render
 tool-result UI resources inline; the resource is left in the response for other clients, and
-the real inline experience will come from ChatGPT's skybridge widget (to test with Plus). So
-the current picture: Claude = link-based, ChatGPT = inline card. Milestone log:
-`docs/mvp-log.md`.
+the real inline experience will come from ChatGPT's skybridge widget. So the current picture:
+Claude = link-based, ChatGPT = inline card.
+
+Then got the connector working in **ChatGPT** (it was available in the **Work/Business
+workspace**, not personal Plus) — **MVP 1 (ChatGPT)**: ChatGPT calls `create_h5p_quiz` and
+**renders our inline widget** (an answer-key preview + ▶ Play / Download buttons). The thing
+Claude Desktop couldn't do. Built **MVP 1.1 (ChatGPT)** on top: a "▶ Play here" toggle that
+embeds the real `h5p-standalone` player *inside* the card (with `openai/widgetCSP` +
+cross-origin CORS so it loads from our domain). Deployed; awaiting an in-ChatGPT test. The
+milestone log now runs two tracks — `docs/mvp-log.md` Track A (Claude Desktop) / Track B
+(ChatGPT).
 
 **2026-09-08 (orientation) —** Started on an empty repo. Connected Sherpa-B (`project-init` → *created*),
 project `project2608b` bound to the repo. Set up the journey record (two files, Mermaid spine)
@@ -208,4 +218,5 @@ Committed as `0bd4f47`. Next: `/coach`, then start building the first version vi
 | 2026-09-08 | Orientation workout complete: workspace, profile, project idea (H5P ChatGPT App), Level 2 autonomy, Crawl MVP goal. Commit `0bd4f47`. |
 | 2026-09-08 | First version built: Next.js app at repo root — MCP server (`create_h5p_quiz`) + demo harness + `.h5p` Question Set builder. Deployed to `project2608b.vercel.app`. `specs/mvi_spec.md` added. |
 | 2026-09-08 | Product reframed to "H5P AI capability layer (MCP), ChatGPT first"; `specs/mvi_spec.md`, `journey.md`, `README.md` updated. Kahoot ChatGPT app studied as reference UX. |
-| 2026-09-09 | MVP 1 validated in **Claude Desktop** (custom connector, 7-question quiz E2E). Added MVP 1.1 (`/play/<token>` browser preview link) + MVP 1.2 (inline MCP-UI resource, experimental). `docs/mvp-log.md` started as the versioned milestone log. |
+| 2026-09-09 | MVP 1 validated in **Claude Desktop** (custom connector, 7-question quiz E2E). Added MVP 1.1 (`/play/<token>` browser preview link) + MVP 1.2 (inline MCP-UI resource — Claude doesn't render it). `docs/mvp-log.md` started. |
+| 2026-09-09 | **MVP 1 (ChatGPT)** — connector working in the Work/Business workspace; ChatGPT renders the inline widget. **MVP 1.1 (ChatGPT)** — "▶ Play here" embeds the interactive player in the card (`openai/widgetCSP` + CORS); deployed. `docs/mvp-log.md` split into Track A / Track B. |

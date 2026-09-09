@@ -84,18 +84,29 @@ custom component inline. This is the thing Claude Desktop could not do (A3).
 **Gap it exposed:** the card is a *static* answer-key view — you can't take the quiz inside
 the card; "▶ Play" opens a new tab. → B2.
 
-## B2 · MVP 1.1 (ChatGPT) — interactive quiz inside the card · in progress
+## B2 · MVP 1.1 (ChatGPT) — interactive quiz inside the card · 2026-09-09 · deployed, awaiting test
 
-Embed the real `h5p-standalone` player inside the widget so the quiz is playable
-(answer / check / score) directly in the ChatGPT card. Design: answer-key preview by default
-(useful for the review-and-approve / Level-2-autonomy flow) with a **"▶ Play here"** toggle
-that swaps to the embedded interactive player; **Download .h5p** always visible; the
-full-page `/play` link kept as a secondary option.
+The widget now has a **"▶ Play here"** toggle that swaps the answer-key preview for the real
+`h5p-standalone` player, loaded on demand from our origin — so the quiz is playable
+(answer / check / score) directly in the ChatGPT card. Answer-key stays the default view
+(useful for review-and-approve / Level-2 autonomy); **Download .h5p** and the full-page
+`/play` link stay available.
 
-**Depends on:** ChatGPT's "Enforce CSP in developer mode" staying OFF, or a declared widget
-CSP (`openai/widgetCSP`) allowing our domain. Player assets and package files must send
-permissive CORS (the `/api/h5p/.../player` route already does; adding it for
-`/h5p-standalone/*`).
+**How:**
+- `lib/h5p/widget.ts` — "Play here" button lazy-loads `…/h5p-standalone/main.bundle.js` and
+  mounts the player at `structuredContent.playerUrl` (`/api/h5p/<token>/player`).
+- Tool returns `playerUrl` (absolute) in `structuredContent`.
+- Widget resource declares `openai/widgetCSP` (`connect_domains` / `resource_domains` = our
+  origin) so it works even if "Enforce CSP in developer mode" is ON.
+- `next.config.ts` sets `Access-Control-Allow-Origin: *` on `/h5p-standalone/*`; the
+  `/api/h5p/.../player` route already does.
+
+**Verified server-side (2026-09-09):** `playerUrl` present; widget CSP points at the prod
+origin; player assets + package files send `ACAO: *`.
+
+**Open test:** re-run the tool in ChatGPT, click **▶ Play here** in the card, confirm the
+quiz renders and is answerable inside the chat. Watch the widget console for CSP/CORS blocks
+if it fails.
 
 ---
 
