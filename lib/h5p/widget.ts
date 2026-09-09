@@ -30,7 +30,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   button.ghost { background: transparent; border: 1px solid #10a37f; color: #10a37f; }
   .hint { font-size: 12px; opacity: .7; }
   #player { margin-top: 12px; min-height: 120px; }
-  #player .h5p-iframe-wrapper, #player .h5p-content { background: #fff; border-radius: 8px; }
+  #player iframe { width: 100%; height: 460px; border: 1px solid rgba(128,128,128,.3); border-radius: 8px; background: #fff; }
   .err { color: #c0392b; font-size: 12px; margin-top: 8px; }
 </style>
 </head>
@@ -39,11 +39,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 <script>
   function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
-  var data = null, playing = false, playerLoaded = false;
-
-  function assetOrigin(d){
-    try { return new URL(d.playerUrl || d.playUrl).origin; } catch (e) { return ""; }
-  }
+  var data = null, playing = false;
 
   function answerKey(d){
     return (d.questions||[]).map(function(q,i){
@@ -57,12 +53,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   function render(){
     var d = data; if (!d) return;
     var root = document.getElementById('root');
+    var canPlay = !!d.playUrl;
     root.innerHTML =
       '<h1>'+esc(d.title||'Quiz')+'</h1>'+
       '<div class="sub">'+ (d.questionCount||0) +' questions \\u00b7 pass mark '+ (d.passPercentage||60) +'%  \\u00b7  H5P Question Set</div>'+
-      (playing ? '<div id="player">Loading player…</div>' : answerKey(d))+
+      (playing && canPlay
+        ? '<div id="player"><iframe src="'+esc(d.playUrl)+'?embed=1" title="Interactive quiz" allowfullscreen></iframe></div>'
+        : answerKey(d))+
       '<div class="actions">'+
-        (d.playerUrl || d.playUrl
+        (canPlay
           ? '<button class="act" id="toggle">'+(playing ? 'Show answer key' : '\\u25b6 Play here')+'</button>'
           : '')+
         (d.downloadUrl ? '<a class="dl" href="'+esc(d.downloadUrl)+'" target="_blank" rel="noopener" style="background:transparent;border:1px solid #10a37f;color:#10a37f">Download .h5p</a>' : '')+
@@ -70,38 +69,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '</div>'+
       '<div class="err" id="err"></div>';
     var t = document.getElementById('toggle');
-    if (t) t.onclick = function(){ playing = !playing; render(); if (playing) mountPlayer(); };
-  }
-
-  function loadScript(src){
-    return new Promise(function(res, rej){
-      var s = document.createElement('script');
-      s.src = src; s.onload = res; s.onerror = function(){ rej(new Error('failed to load '+src)); };
-      document.head.appendChild(s);
-    });
-  }
-
-  function mountPlayer(){
-    var d = data, origin = assetOrigin(d);
-    var host = document.getElementById('player');
-    if (!host || !origin) return;
-    var go = function(){
-      host.innerHTML = '';
-      var el = document.createElement('div');
-      host.appendChild(el);
-      new window.H5PStandalone.H5P(el, {
-        h5pJsonPath: d.playerUrl || (origin + new URL(d.playUrl).pathname.replace(/^\\/play\\//, '/api/h5p/') + '/player'),
-        frameJs: origin + '/h5p-standalone/frame.bundle.js',
-        frameCss: origin + '/h5p-standalone/styles/h5p.css'
-      }).catch(function(e){ document.getElementById('err').textContent = 'Could not load the player: ' + e.message; });
-    };
-    if (window.H5PStandalone) { go(); return; }
-    if (!playerLoaded) {
-      playerLoaded = true;
-      loadScript(origin + '/h5p-standalone/main.bundle.js').then(go).catch(function(e){
-        document.getElementById('err').textContent = e.message;
-      });
-    }
+    if (t) t.onclick = function(){ playing = !playing; render(); };
   }
 
   function boot(){

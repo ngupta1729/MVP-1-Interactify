@@ -15,8 +15,15 @@ export async function generateMetadata(
   }
 }
 
-export default async function PlayPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function PlayPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ embed?: string }>;
+}) {
   const { token } = await params;
+  const embed = "embed" in (await searchParams);
 
   let title: string | null = null;
   let questionCount = 0;
@@ -31,6 +38,15 @@ export default async function PlayPage({ params }: { params: Promise<{ token: st
       <div className="wrap">
         <h1>Quiz link not valid</h1>
         <p className="muted">This link is malformed or truncated. Generate the quiz again.</p>
+      </div>
+    );
+  }
+
+  // Compact view for embedding inside another app (e.g. the ChatGPT widget iframe).
+  if (embed) {
+    return (
+      <div style={{ padding: 8 }}>
+        <H5pPlayer playerPath={`/api/h5p/${token}/player`} />
       </div>
     );
   }
