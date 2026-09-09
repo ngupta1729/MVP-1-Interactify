@@ -133,14 +133,29 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="actions">'+
         primary +
         '<button class="btn ghost" id="toggle">'+toggleLabel+'</button>'+
-        (d.downloadUrl ? '<a class="link" href="'+esc(d.downloadUrl)+'" target="_blank" rel="noopener">Download .h5p</a>' : '')+
-        (d.playUrl ? '<a class="hint" href="'+esc(d.playUrl)+'" target="_blank" rel="noopener">open in H5P player \\u2197</a>' : '')+
+        (d.downloadUrl ? '<button class="btn ghost" id="dl">Download .h5p</button>' : '')+
+        (d.playUrl ? '<button class="btn ghost" id="full">Open in H5P player \\u2197</button>' : '')+
       '</div>';
 
     wire();
   }
 
+  function openExternal(url){
+    try {
+      if (window.openai && typeof window.openai.openExternal === 'function') {
+        window.openai.openExternal({ href: url });
+        return;
+      }
+    } catch (e) {}
+    window.open(url, '_blank', 'noopener');
+  }
+
   function wire(){
+    var dl = document.getElementById('dl');
+    if (dl) dl.onclick = function(){ openExternal(data.downloadUrl); };
+    var full = document.getElementById('full');
+    if (full) full.onclick = function(){ openExternal(data.playUrl); };
+
     var t = document.getElementById('toggle');
     if (t) t.onclick = function(){
       mode = (mode === 'quiz') ? 'key' : 'quiz';
