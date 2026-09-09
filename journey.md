@@ -12,7 +12,7 @@
 |---|---|
 | **Stage** | 0 — Get Started Building |
 | **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
-| **Next action** | Test the MCP server in a client — Claude Desktop GUI, then ChatGPT Plus (`docs/testing-in-ai-clients.md`) · import a generated `.h5p` into h5p.com/Lumi to confirm it plays · record the demo (`sprint-demo-prep`) |
+| **Next action** | In Claude Desktop, re-run the tool and check: (a) the `▶ Play` link opens the interactive quiz, (b) whether the inline MCP-UI panel renders · import a `.h5p` into h5p.com/Lumi to confirm it plays · then test in ChatGPT Plus · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
 | **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
@@ -65,7 +65,11 @@ concrete project idea and ship a first version to react to.
 - [x] **Sherpa-B project initialized & bound** — 2026-09-08
 - [x] **Orientation complete** — workspace dirs, profile, project idea, autonomy level — 2026-09-08
 - [x] **First version built & deployed** — H5P quiz MCP server (ChatGPT-ready) + demo harness, live on Vercel — 2026-09-08
-  - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` plays in h5p.com/Lumi · record demo
+- [x] **MVP 1 (Claude Desktop)** — tool connected to Claude Desktop, generated a 7-question quiz end to end — 2026-09-09
+- [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link returned by the tool — 2026-09-09
+- [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource (experimental; Claude-render unverified) — 2026-09-09
+  - remaining: `OPENAI_API_KEY` on Vercel · confirm `.h5p` plays in h5p.com/Lumi · confirm MVP 1.2 inline panel in Claude Desktop · test in ChatGPT Plus · record demo
+  - full log: `docs/mvp-log.md`
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
 
@@ -166,6 +170,19 @@ format, `.h5p` is open, so "come back to h5p.com" isn't a moat and it's not yet 
 real vendor incentive is. Both — does the round-trip loop matter to teachers, and what is the
 incentive — are Stage 1 user-research questions (see `reports/builder_priorities.md`).
 
+**2026-09-09 —** First real-client validation. Connected the deployed MCP server to **Claude
+Desktop** as a custom connector (Claude Pro) and generated a 7-question water-cycle quiz end
+to end, with the refine loop — **MVP 1 (Claude Desktop)**. Confirmed "any MCP client, not
+just ChatGPT" is real, and the questions the assistant writes from source content are good.
+Claude Desktop shows the tool result + a download link but **no inline preview** (our widget
+is ChatGPT-only `+skybridge`). Added two increments: **MVP 1.1** — the tool returns a
+`/play/<token>` link that opens the quiz fully interactive in a browser tab (new
+`app/play/[token]` page + shared `components/H5pPlayer`); **MVP 1.2** — the tool also returns
+an MCP-UI resource (`ui://h5p-quiz/<token>`, HTML iframing the play page) so MCP-UI-capable
+clients can render the quiz inline — experimental, Claude-Desktop rendering still to be
+confirmed. Both deployed and verified on the production URL. Milestone log started at
+`docs/mvp-log.md`.
+
 **2026-09-08 (orientation) —** Started on an empty repo. Connected Sherpa-B (`project-init` → *created*),
 project `project2608b` bound to the repo. Set up the journey record (two files, Mermaid spine)
 and an Obsidian vault at the project root. Ran the **Orientation** workout end to end:
@@ -187,3 +204,4 @@ Committed as `0bd4f47`. Next: `/coach`, then start building the first version vi
 | 2026-09-08 | Orientation workout complete: workspace, profile, project idea (H5P ChatGPT App), Level 2 autonomy, Crawl MVP goal. Commit `0bd4f47`. |
 | 2026-09-08 | First version built: Next.js app at repo root — MCP server (`create_h5p_quiz`) + demo harness + `.h5p` Question Set builder. Deployed to `project2608b.vercel.app`. `specs/mvi_spec.md` added. |
 | 2026-09-08 | Product reframed to "H5P AI capability layer (MCP), ChatGPT first"; `specs/mvi_spec.md`, `journey.md`, `README.md` updated. Kahoot ChatGPT app studied as reference UX. |
+| 2026-09-09 | MVP 1 validated in **Claude Desktop** (custom connector, 7-question quiz E2E). Added MVP 1.1 (`/play/<token>` browser preview link) + MVP 1.2 (inline MCP-UI resource, experimental). `docs/mvp-log.md` started as the versioned milestone log. |

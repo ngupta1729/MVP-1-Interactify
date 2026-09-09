@@ -58,6 +58,9 @@ in the demo-prep checklist below.
   other clients ignore it.
 - Demo harness (`/` + `/api/demo`) that uses a direct OpenAI call in place of an AI
   assistant, with an embedded live H5P player (h5p-standalone) and a Download `.h5p` button.
+- `/play/<token>` — a full-page interactive player for any generated quiz. The MCP tool
+  returns this URL (MVP 1.1) plus an MCP-UI resource that iframes it (MVP 1.2), so clients
+  without inline rendering still get one-click "play in browser".
 - Conversational refinement = re-run with an instruction ("make Q2 harder", "add a question
   about X").
 - Stateless: a quiz is identified by an encoded token, rebuilt on demand. No database.
@@ -83,19 +86,22 @@ in the demo-prep checklist below.
 
 ## Definition of done
 
-- [x] `create_h5p_quiz` (MCP) builds a `.h5p` and returns preview data + a working download URL.
+- [x] `create_h5p_quiz` (MCP) builds a `.h5p` and returns preview data + working download/play URLs.
 - [x] Demo page: content → generated quiz → refine → download, working end to end locally.
 - [x] Embedded H5P player renders the generated quiz.
 - [x] `npm run h5p:smoke` passes (package is structurally valid).
-- [ ] Deployed to a public URL (Vercel).
+- [x] Deployed to a public URL (Vercel).
+- [x] Validated in a real MCP client (Claude Desktop) — see `docs/mvp-log.md`.
 - [ ] Generated `.h5p` confirmed to import and play in **h5p.com** and/or **Lumi** (manual).
 - [ ] 60–90s demo recording captured against the scenario above.
 
 ## Demo-prep checklist
 
-- [ ] Deploy; set `OPENAI_API_KEY` on Vercel.
-- [ ] Run the full scenario on the deployed URL.
+- [x] Deploy.
+- [ ] Set `OPENAI_API_KEY` on Vercel (demo page only).
+- [ ] In Claude Desktop: run the tool, click the `▶ Play` link, and check whether the inline
+      MCP-UI panel renders (MVP 1.2).
 - [ ] Download a `.h5p`, import to h5p.com and Lumi, confirm it plays and scores.
-- [ ] Connect `/api/mcp` in MCP Inspector; screenshot the `create_h5p_quiz` call + result.
+- [ ] Test in ChatGPT Plus — including whether the `+skybridge` card renders for a dev connector.
 - [ ] Record the walkthrough; write 3 specific questions to ask the cohort (tied to the demo
       objective above).
