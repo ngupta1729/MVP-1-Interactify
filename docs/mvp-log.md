@@ -113,6 +113,31 @@ see the score.
 
 ---
 
+## B3 · MVP 1.2 (ChatGPT) — make the in-card quiz look like real H5P · 2026-09-09
+
+**Why:** the participant's critique — Kahoot's inline card looks like real Kahoot; ours was
+bare radio buttons and didn't read as H5P. The *look* is fully in our control even though
+the H5P runtime is not (B2).
+
+**What:** rebuilt the widget (`lib/h5p/widget.ts`) against H5P's own vendored stylesheets
+(`H5P.MultiChoice`, `H5P.Question`, `H5P.QuestionSet`, `H5P.JoubelUI`). It now renders as an
+H5P Question Set: **one question at a time** with the **progress dots**, H5P-blue pill
+buttons (`#1a73d9` — "✓ Check", "Next →", "Finish", "↻ Retry"), the exact answer-option
+colours (grey pill + drop shadow → `#cee0f4` selected → `#b6e4ce` correct / `#fbd7d8` wrong
+with ✓/✗), a **results screen** with H5P's score bar (green-gradient fill + star, gold on
+100%) and greeting text, and the **H5P footer bar** ("↺ Reuse" · "H5P"). Always renders
+light, like an embedded H5P activity. Answer-key stays the default (review-and-approve).
+
+Still a self-contained no-network JS runner — B2's sandbox constraint is unchanged.
+
+**Verified server-side (2026-09-09):** `resources/read ui://widget/quiz-v3.html` returns the
+restyled widget (`scorebar`, `h5pbar`, progress dots); deployed to production.
+
+**Open test:** re-run the tool in ChatGPT → confirm the card looks like an H5P quiz →
+**▶ Take the quiz** → answer / Check / Next / Finish → score bar on the results screen.
+
+---
+
 ## Next candidates (not built)
 
 - Confirm a generated `.h5p` imports and plays in **h5p.com** and **Lumi** (portability, not
