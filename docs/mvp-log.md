@@ -138,6 +138,44 @@ restyled widget (`scorebar`, `h5pbar`, progress dots); deployed to production.
 
 ---
 
+## B4 · MVP 1.3 (ChatGPT) — run the REAL H5P runtime in the card · 2026-09-10
+
+**Why:** B3 is a lookalike; the participant wants the actual H5P activity (the one "Open in
+H5P player" shows) inside the chat. Timeboxed spike on whether H5P's runtime can survive
+ChatGPT's component sandbox.
+
+**Root cause of B2's "hung forever":** `h5p-standalone` **defaults to `embedType: "iframe"`**
+(`main.bundle.js`: `n.embedType ? n.embedType : "iframe"`). In iframe mode it creates an
+`about:blank` iframe and writes the content into it. ChatGPT's component CSP is
+`frame-src 'none'` by default, so that iframe never becomes ready and the loader waits
+forever. Not a fundamental limit — just the wrong embed mode.
+
+**Fix:** pass **`embedType: "div"`**. h5p-standalone's div branch appends a
+`<div class="h5p-content">` and injects the library `<script>` / `<link>` tags into
+`<head>` — **no iframe**. Assets load cross-origin from our Vercel origin:
+- `resource_domains` → `script-src` (h5p-standalone `main`/`frame` bundles + the 8 vendored
+  library JS/CSS files). h5p-standalone injects plain `<script>` tags (no `crossorigin`).
+- `connect_domains` + our `Access-Control-Allow-Origin: *` → the `content.json` / `h5p.json`
+  fetches.
+- `h5p.json` already had `embedTypes: ["div"]`; the `.h5p` and `/play` page are unchanged.
+- CSP now declared in **both** `_meta["openai/widgetCSP"]` (legacy snake_case) and
+  `_meta.ui.csp` (current camelCase).
+
+**Widget behaviour (`quiz-v5`):** "▶ Take the quiz" → load `h5p-standalone`, mount the real
+`H5P.QuestionSet` with `embedType:"div"`, 12 s watchdog. On **any** failure (timeout, CSP
+block, empty render) → fall back to the B3 H5P-styled JS runner. Answer-key stays default.
+No regression regardless of sandbox behaviour.
+
+**Verified:** `tsc`; widget JS parses; `resources/read ui://widget/quiz-v5.html` serves the
+real-H5P path; deployed to production. Local browser check blocked (Claude-in-Chrome lacks
+site permission for the Vercel domain).
+
+**Open test (ChatGPT):** re-run the tool → **▶ Take the quiz** → does the *real* H5P Question
+Set render in the card (looks identical to "Open in H5P player"), or does it fall back to
+the lightweight runner? Either outcome is the spike result.
+
+---
+
 ## Next candidates (not built)
 
 - Confirm a generated `.h5p` imports and plays in **h5p.com** and **Lumi** (portability, not

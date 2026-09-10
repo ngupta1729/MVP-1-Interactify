@@ -12,7 +12,7 @@
 |---|---|
 | **Stage** | 0 — Get Started Building |
 | **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
-| **Next action** | In ChatGPT (Work workspace): re-run the tool — confirm the card now **looks like an H5P quiz** and **▶ Take the quiz** runs (question-at-a-time, Check/Next/Finish, score bar) [MVP 1.2 ChatGPT / B3] · import a `.h5p` into h5p.com/Lumi · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
+| **Next action** | In ChatGPT (Work workspace): re-run the tool → **▶ Take the quiz** — does the **real H5P Question Set** render in the card, or fall back to the lightweight runner? [MVP 1.3 ChatGPT / B4 spike] · import a `.h5p` into h5p.com/Lumi · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
 | **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
@@ -71,7 +71,8 @@ concrete project idea and ship a first version to react to.
 - [x] **MVP 1 (ChatGPT)** — connector added (in the **Work/Business workspace**); ChatGPT calls the tool and **renders the inline card** (answer key + Play/Download) — 2026-09-09
 - [~] **MVP 1.1 (ChatGPT)** — "▶ Take the quiz" in the card: a self-contained JS quiz runner (answer/check/score) — the skybridge sandbox blocks embedding the real H5P runtime (external script AND iframe), so this mirrors Kahoot's self-contained inline preview; deployed, awaiting an in-ChatGPT test — 2026-09-09
 - [~] **MVP 1.2 (ChatGPT)** — in-card quiz restyled against H5P's own CSS so it reads as a real H5P Question Set (progress dots, pill options in H5P colours, score bar + star, H5P footer); deployed, awaiting an in-ChatGPT test — 2026-09-09
-  - remaining: confirm the restyled card + quiz run in ChatGPT · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
+- [~] **MVP 1.3 (ChatGPT)** — spike: run the *real* H5P runtime in the card. Root-caused B2's hang (h5p-standalone defaults to iframe embed → ChatGPT's `frame-src 'none'` blocks the `about:blank` iframe). Fix: `embedType:"div"` (no iframe), assets from our origin via `resource_domains`/CORS. Widget tries real H5P with a 12s watchdog, falls back to the B3 JS runner on failure — no regression. Deployed `quiz-v5`, awaiting an in-ChatGPT test — 2026-09-10
+  - remaining: confirm in ChatGPT whether real H5P renders or falls back · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
   - full log: `docs/mvp-log.md` (Track A = Claude Desktop, Track B = ChatGPT)
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
