@@ -11,18 +11,33 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v4.html";
+const WIDGET_URI = "ui://widget/quiz-v5.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
-const LEGACY_WIDGET_URIS = ["ui://widget/quiz.html", "ui://widget/quiz-v3.html"];
+const LEGACY_WIDGET_URIS = [
+  "ui://widget/quiz.html",
+  "ui://widget/quiz-v3.html",
+  "ui://widget/quiz-v4.html",
+];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
-// Lets the ChatGPT widget load the h5p-standalone player + package files from our
-// origin even when "Enforce CSP in developer mode" is on.
+// Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
+// origin even when "Enforce CSP in developer mode" is on. resource_domains covers
+// script-src (h5p-standalone bundles + library JS/CSS); connect_domains covers the
+// content.json fetch. We render H5P with embedType "div" so no nested iframe is
+// needed — frame_domains stays empty. Declared in both the legacy snake_case key
+// and the newer _meta.ui.csp shape.
+const CSP_DOMAINS = { connect: [APP_ORIGIN], resource: [APP_ORIGIN] };
 const WIDGET_CSP = {
   "openai/widgetCSP": {
-    connect_domains: [APP_ORIGIN],
-    resource_domains: [APP_ORIGIN],
+    connect_domains: CSP_DOMAINS.connect,
+    resource_domains: CSP_DOMAINS.resource,
+  },
+  ui: {
+    csp: {
+      connectDomains: CSP_DOMAINS.connect,
+      resourceDomains: CSP_DOMAINS.resource,
+    },
   },
 };
 

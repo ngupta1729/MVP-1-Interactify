@@ -1,16 +1,14 @@
 /**
  * The inline component ChatGPT renders after create_h5p_quiz runs
- * (MCP resource ui://widget/quiz-v3.html, mimeType text/html+skybridge).
+ * (MCP resource ui://widget/quiz-v4.html, mimeType text/html+skybridge).
  *
- * ChatGPT's component sandbox blocks loading external scripts AND framing external
- * pages, so the real h5p-standalone runtime can't run here (same limit Kahoot's
- * inline card hits). Instead this widget is a self-contained quiz runner (vanilla
- * JS, no network) styled to match H5P's real Question Set / Multiple Choice look —
- * the colours, pill options, progress dots, score bar and footer are lifted from
- * H5P's own stylesheets. The full H5P activity is the .h5p download / full-page
- * player linked from the footer.
+ * "Take the quiz" first tries to load the REAL H5P runtime (h5p-standalone,
+ * embedType "div" — no iframe, so ChatGPT's component CSP doesn't block it) and
+ * render the actual H5P.QuestionSet from our origin. If that fails or is too slow
+ * it falls back to a self-contained JS quiz runner styled to match H5P's look.
+ * Either way the full activity is also the .h5p download / full-page player.
  *
- * Always renders light (real H5P activities do), regardless of the chat theme.
+ * Always renders light, like a real embedded H5P activity.
  */
 export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 <html>
@@ -32,7 +30,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     font: 15px/1.5 "Open Sans", "Segoe UI", Roboto, -apple-system, system-ui, sans-serif;
     color: var(--ink);
   }
-  .h5p {
+  .h5pcard {
     background: #fff; color: var(--ink);
     border: 1px solid #d5d5d5; border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0,0,0,.08);
@@ -40,6 +38,18 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
   h1.title { font-size: 1.35em; font-weight: 700; margin: 0 0 1px; }
   .meta { color: var(--muted); font-size: .8em; margin-bottom: 4px; }
+
+  .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 22px 4px; }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--opt); border-top-color: var(--blue);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fallback-note { color: var(--muted); font-size: .78em; margin: 10px 0 0; }
+
+  #h5proot { margin-top: 6px; }
+  /* keep the real H5P activity on a white ground inside the card */
+  #h5proot .h5p-content, #h5proot .h5p-container { background: #fff; }
 
   .dots { text-align: center; padding: 6px 0 2px; line-height: 2em; }
   .dot {
@@ -136,7 +146,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 </style>
 </head>
 <body>
-<div class="h5p" id="root">Loading&hellip;</div>
+<div class="h5pcard" id="root">Loading&hellip;</div>
 <script>
 (function(){
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
@@ -144,11 +154,13 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }); }
 
   var data = null;
-  var mode = "key";        // "key" | "quiz"
-  var qi = 0;              // current question in quiz mode
-  var picks = [];          // picks[i] = array of selected answer indices
-  var checked = [];        // checked[i] = has this question been checked
-  var finished = false;
+  // "key"  = answer-key review view (default)
+  // "real" = real H5P runtime (h5p-standalone) mounted / mounting
+  // "js"   = self-contained JS fallback runner
+  var mode = "key";
+  var realState = "idle";  // idle | loading | ok | failed
+  var h5pNode = null;      // the live element h5p-standalone renders into (kept across re-renders)
+  var qi = 0, picks = [], checked = [], finished = false;
 
   function qlist(){ return (data && data.questions) || []; }
   function stemOf(q){ return q.stem || q.question || ""; }
@@ -159,7 +171,6 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     picks = qlist().map(function(){ return []; });
     checked = qlist().map(function(){ return false; });
   }
-
   function qCorrect(i){
     var q = qlist()[i], sel = picks[i] || [];
     for (var k = 0; k < q.answers.length; k++){
@@ -167,7 +178,6 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     }
     return true;
   }
-
   function scored(){
     var p = 0, t = qlist().length;
     for (var i = 0; i < t; i++) if (qCorrect(i)) p++;
@@ -183,7 +193,89 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       'fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.2" stroke-linejoin="round"/></svg>';
   }
 
-  // ---- answer key (default / review-and-approve view) ----
+  // ---------- real H5P runtime ----------
+  function assetOrigin(){
+    try { return new URL(data.playerUrl || data.playUrl).origin; } catch (e) { return ""; }
+  }
+  function playerBase(){
+    if (data.playerUrl) return data.playerUrl;
+    try {
+      var u = new URL(data.playUrl);
+      return u.origin + u.pathname.replace(/^\\/play\\//, "/api/h5p/") + "/player";
+    } catch (e) { return ""; }
+  }
+
+  function loadScriptOnce(src){
+    return new Promise(function(res, rej){
+      var existing = document.querySelector('script[data-h5p="1"]');
+      if (existing){
+        if (window.H5PStandalone) return res();
+        existing.addEventListener("load", function(){ res(); }, { once: true });
+        existing.addEventListener("error", function(){ rej(new Error("load error")); }, { once: true });
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = src; s.dataset.h5p = "1";
+      s.onload = function(){ res(); };
+      s.onerror = function(){ rej(new Error("could not load " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function mountReal(){
+    var origin = assetOrigin(), base = playerBase();
+    if (!origin || !base){ return failReal(); }
+
+    var settled = false;
+    var watchdog = setTimeout(function(){
+      if (!settled){ settled = true; failReal(); }
+    }, 12000);
+
+    h5pNode = document.createElement("div");
+
+    loadScriptOnce(origin + "/h5p-standalone/main.bundle.js")
+      .then(function(){
+        if (settled) return;
+        return new window.H5PStandalone.H5P(h5pNode, {
+          h5pJsonPath: base,
+          frameJs: origin + "/h5p-standalone/frame.bundle.js",
+          frameCss: origin + "/h5p-standalone/styles/h5p.css",
+          embedType: "div",
+        });
+      })
+      .then(function(){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
+        // bail if H5P produced nothing usable
+        if (!h5pNode.querySelector(".h5p-content, .h5p-question")) return failReal();
+        realState = "ok"; mode = "real"; render();
+      })
+      .catch(function(){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
+        failReal();
+      });
+  }
+
+  function failReal(){
+    realState = "failed";
+    mode = "js"; resetRun();
+    render();
+  }
+
+  function realView(){
+    if (realState === "loading"){
+      return '<div class="loading"><span class="spinner"></span>Loading the H5P activity&hellip;</div>';
+    }
+    // realState === "ok": #h5proot-slot gets the live h5pNode re-attached after innerHTML.
+    return '<div id="h5proot-slot"></div>' +
+      '<div class="foot">' +
+        '<button class="btn sec" id="key">Answer key</button>' +
+        actionBtns() +
+      '</div>';
+  }
+
+  // ---------- answer key (default) ----------
   function keyView(){
     var rows = qlist().map(function(q, i){
       var opts = (q.answers || []).map(function(a){
@@ -204,8 +296,8 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '</div>';
   }
 
-  // ---- one question at a time (H5P Question Set flow) ----
-  function quizView(){
+  // ---------- JS fallback runner (H5P-styled) ----------
+  function jsView(){
     if (finished) return resultsView();
 
     var q = qlist()[qi], multi = isMulti(q), grade = checked[qi];
@@ -244,6 +336,10 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       foot = '<button class="btn" id="finish">Finish</button>';
     }
 
+    var note = realState === "failed"
+      ? '<div class="fallback-note">Showing a lightweight version \\u2014 open the full H5P activity below.</div>'
+      : '';
+
     return '<div class="dots">' + dots + '</div>' +
       '<div class="stem">' + esc(stemOf(q)) +
         (multi ? ' <span class="subtle">(select all that apply)</span>' : '') + '</div>' +
@@ -251,7 +347,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       fb +
       '<div class="foot">' + foot +
         '<button class="btn sec" id="key">Answer key</button>' +
-      '</div>';
+      '</div>' + note;
   }
 
   function resultsView(){
@@ -295,14 +391,23 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   function render(){
     if (!data){ return; }
     var root = document.getElementById("root");
-    var body = mode === "quiz" ? quizView() : keyView();
+    var body;
+    if (mode === "real") body = realView();
+    else if (mode === "js") body = jsView();
+    else body = keyView();
+
     var count = (data.questionCount || qlist().length);
     root.innerHTML =
       '<h1 class="title">' + esc(data.title || "Quiz") + '</h1>' +
       '<div class="meta">' + count + ' question' + (count === 1 ? "" : "s") +
-        ' \\u00b7 Multiple Choice \\u00b7 pass mark ' + ((data.passPercentage) || 60) + '%</div>' +
+        ' \\u00b7 H5P Question Set \\u00b7 pass mark ' + ((data.passPercentage) || 60) + '%</div>' +
       body +
       footerBar();
+
+    if (mode === "real" && realState === "ok" && h5pNode){
+      var slot = document.getElementById("h5proot-slot");
+      if (slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
+    }
     wire();
   }
 
@@ -321,7 +426,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var by = function(id){ return document.getElementById(id); };
 
     var start = by("start");
-    if (start) start.onclick = function(){ mode = "quiz"; resetRun(); render(); };
+    if (start) start.onclick = function(){
+      mode = "real"; realState = "loading"; render(); mountReal();
+    };
 
     var key = by("key");
     if (key) key.onclick = function(){ mode = "key"; render(); };
@@ -331,13 +438,10 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       if (!(picks[qi] || []).length) return;
       checked[qi] = true; render();
     };
-
     var next = by("next");
     if (next) next.onclick = function(){ qi++; render(); };
-
     var finish = by("finish");
     if (finish) finish.onclick = function(){ finished = true; render(); };
-
     var retry = by("retry");
     if (retry) retry.onclick = function(){ resetRun(); render(); };
 
@@ -350,7 +454,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var logo = by("logo");
     if (logo) logo.onclick = function(){ openExternal("https://h5p.org"); };
 
-    if (mode === "quiz" && !finished && !checked[qi]){
+    if (mode === "js" && !finished && !checked[qi]){
       var lis = document.querySelectorAll("li.answer");
       for (var i = 0; i < lis.length; i++){
         lis[i].onclick = function(){
