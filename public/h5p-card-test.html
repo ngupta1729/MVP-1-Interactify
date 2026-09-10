@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>H5P card runtime test</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; max-width: 780px; }
+  #host { margin-top: 12px; border: 1px solid #ccc; border-radius: 8px; padding: 8px; min-height: 80px; }
+  #log { white-space: pre-wrap; background: #111; color: #0f0; padding: 8px; border-radius: 6px; font: 12px/1.4 monospace; margin-top: 12px; }
+  .h5p-content, .h5p-iframe { background: #fff; }
+</style>
+</head>
+<body>
+<h1>H5P card runtime test (embedType: div)</h1>
+<p>Add <code>?player=&lt;playerUrl&gt;</code> — the <code>/api/h5p/&lt;token&gt;/player</code> URL.</p>
+<div id="host">no player yet</div>
+<div id="log"></div>
+<script src="/h5p-standalone/main.bundle.js"></script>
+<script>
+  var log = function (m) {
+    document.getElementById("log").textContent += m + "\n";
+    console.log("[h5p-test]", m);
+  };
+  window.addEventListener("error", function (e) { log("window error: " + (e.message || e)); });
+  window.addEventListener("unhandledrejection", function (e) { log("promise rejection: " + (e.reason && e.reason.message || e.reason)); });
+
+  var player = new URLSearchParams(location.search).get("player");
+  var host = document.getElementById("host");
+
+  if (!player) {
+    host.textContent = "pass ?player=...";
+  } else {
+    host.textContent = "";
+    var el = document.createElement("div");
+    host.appendChild(el);
+    log("mounting: " + player);
+    var t0 = Date.now();
+    new window.H5PStandalone.H5P(el, {
+      h5pJsonPath: player,
+      frameJs: "/h5p-standalone/frame.bundle.js",
+      frameCss: "/h5p-standalone/styles/h5p.css",
+      embedType: "div",
+    })
+      .then(function () { log("H5P resolved in " + (Date.now() - t0) + "ms"); })
+      .catch(function (e) { log("H5P rejected: " + (e && e.message || e)); });
+
+    // Report what actually landed in the DOM after a beat.
+    setTimeout(function () {
+      log("DOM: .h5p-content=" + document.querySelectorAll(".h5p-content").length +
+          " iframe=" + document.querySelectorAll("iframe").length +
+          " .h5p-question=" + document.querySelectorAll(".h5p-question").length +
+          " .h5p-joubelui-button=" + document.querySelectorAll(".h5p-joubelui-button").length);
+    }, 4000);
+  }
+</script>
+</body>
+</html>
