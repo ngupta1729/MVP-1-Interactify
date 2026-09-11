@@ -542,8 +542,18 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
 
   function setData(o){
+    // playerUrl is derived from the quiz's content token, so it changes any
+    // time the spec does (a refinement) and stays the same for a no-op
+    // update. If it changed and we have a mounted real-H5P instance, that
+    // instance is for the *old* quiz - drop it rather than let the "reuse
+    // instead of remount" optimization silently keep showing stale content.
+    var prevPlayerUrl = data && data.playerUrl;
     data = o || {};
     if (picks.length !== qlist().length) resetRun();
+    if (h5pNode && data.playerUrl !== prevPlayerUrl){
+      h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
+      if (mode === "real") mode = "key";
+    }
     render();
     warmRuntime();
   }
