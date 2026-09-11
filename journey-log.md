@@ -295,4 +295,34 @@ entry).
 
 ---
 
+## 2026-09-11 — Educator-not-learner correction; "Approach" roadmap section
+
+### Entry — "I want to clarify that it is the instructional designers and educators who are users here..."
+
+**Asked (user):** Corrected the feedback-loop scoping: the user is the educator, not the
+learner — learners interact with content on the LMS or wherever it's embedded, outside our
+reach. Asked to measure educator activation/engagement specifically, intent to download, and
+whether it drives leads back to h5p.com. Then, mid-turn, asked for an "Approach" section in
+the spec(s) and README splitting MVP 1 / MVP 2 / ... by problem, use case, and scope (left
+the exact structure to Claude's judgment).
+
+**Answer (Claude):** Corrected `specs/feedback_loop_spec.md` throughout: dropped the
+learner-side metrics as out of reach by definition, reframed in-card "Take the quiz" as
+educator review (not classroom telemetry), rebuilt the metric set around educator
+activation/engagement/export-intent/retention, added "abandonment" as the strongest
+available quality proxy (since learner outcome data isn't ours to see), and added a
+lead-generation section distinguishing measurable *intent* (a click toward h5p.com) from
+unmeasurable *conversion* (needs h5p.com's cooperation or their future API) — surfacing that
+`/play/<token>` already has distinct h5p.com/Lumi import links the widget itself lacks.
+Added an "Approach" section to `README.md` (full MVP 1/MVP 2/MVP 3+ roadmap table, each with
+problem/use case/scope) and a short phase-specific "Approach" section to each spec doc
+(`mvi_spec.md`, `feedback_loop_spec.md`) linking back to the README for the complete picture
+— avoiding full duplication across three documents.
+
+**Changed:** `specs/feedback_loop_spec.md` (major correction + new "Lead-generation" section
++ "Approach") · `README.md` (`## Scope` replaced with `## Approach`, MVP 1/2/3+ roadmap) ·
+`specs/mvi_spec.md` (new "Approach" section) · `journey-log.md` (this entry).
+
+---
+
 <!-- END OF LOG -->

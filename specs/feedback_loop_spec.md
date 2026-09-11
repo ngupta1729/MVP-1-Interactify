@@ -4,11 +4,36 @@ _Created 2026-09-11. Scopes the analytics/feedback-loop direction chosen over "p
 directly to a platform" for MVP 2 — see `reports/builder_priorities.md` for why the
 publish-to-platform idea is deferred (blocked on two external API gaps, tracked there)._
 
+## Approach
+
+This is **MVP 2** — see "Approach" in [`README.md`](../README.md) for the full roadmap
+(MVP 1 shipped at [`specs/mvi_spec.md`](mvi_spec.md); MVP 3+ candidates in
+`reports/builder_priorities.md`).
+
+- **Problem:** an open, portable `.h5p` gives no visibility into whether a generated
+  activity is actually good, or whether educators come back — and hosting alone isn't a
+  reason to pay for anything once AI can generate the file directly.
+- **Use case:** capture **educator**-side activation, engagement, and export-intent
+  signals (not learner data — see below); surface feedback to the educator; feed the
+  aggregate signal back into what ChatGPT generates next.
+- **Scope:** this document, in full, below.
+- **Status:** 🟨 scoped, not yet built.
+
+## Who the user is (important correction, 2026-09-11)
+
+**The user is the instructional designer / educator — not the learner.** Learners interact
+with the generated content on an LMS, or wherever it ends up embedded after export — a
+surface we don't control and mostly can't see. Every metric below is about the educator's
+behavior. Where the educator clicks "Take the quiz" inside the card or on `/play`, that's
+the educator *previewing/reviewing their own draft* (matches the review-and-approve
+autonomy model) — not classroom telemetry, even though the underlying xAPI events are real.
+
 ## One-line
 
-Turn real interaction data from the H5P activities we generate into two things: **feedback
-the creator can see** (did this quiz actually work for real learners?), and **feedback that
-automatically improves what ChatGPT generates next**, without training a model of our own.
+Turn real *educator*-side interaction data into two things: **feedback the educator can
+see** (activation, engagement, export intent — did this feel worth using?), and **feedback
+that automatically improves what ChatGPT generates next**, without training a model of our
+own.
 
 ## Why this, before publish-to-platform
 
@@ -28,7 +53,7 @@ even possible varies sharply by surface:
 | Surface | Real H5P xAPI? | What's observable | What's structurally opaque |
 |---|---|---|---|
 | Answer key (default view) | No — static review, not interactive | Card opened/viewed | Nothing deeper — no interaction exists |
-| Take the quiz → **real H5P** | **Yes**, natively (`H5P.externalDispatcher`) — same-window, since we use `embedType:"div"`, no iframe boundary to cross | Every answer, correct/incorrect, completion, score, per-question timing | Nothing — gold-standard path |
+| Take the quiz → **real H5P** | **Yes**, natively (`H5P.externalDispatcher`) — same-window, since we use `embedType:"div"`, no iframe boundary to cross | Every answer, correct/incorrect, completion, timing — but this is the **educator previewing their own draft**, not a learner. On `/play`, it's ambiguous (educator review vs. a link shared straight to a learner) — no way to distinguish without more signal | Nothing technically — but interpret as review behavior, not classroom outcomes |
 | Take the quiz → **JS fallback** | No — hand-built runner, not H5P.js | Everything, *if instrumented* — we own the code, can emit events in the same shape (answered/completed) | Nothing once built; today, nothing is captured |
 | Download `.h5p` | No — leaves our system | The click ("download initiated") | Whether it's ever opened/imported/played anywhere — permanently |
 | Open in H5P player ↗ (`/play/<token>`) | Yes, real H5P mount — but a **separate page**, invisible to the widget's JS | The click, from the widget. Actual play-through only if `/play` independently listens + reports (correlated by token) | Nothing to the widget; solvable with its own wiring |
@@ -38,27 +63,95 @@ even possible varies sharply by surface:
 (in-card or on `/play`), or wherever we deliberately instrument the fallback. Download and
 "open elsewhere" give intent, never outcome.
 
-## What to measure — activation + satisfaction, not click counts
+## What to measure — educator activation + engagement, not click counts
 
-**Learner side** (harder, more valuable — it's the actual pedagogical output):
-- Completion rate (started vs. finished) — abandonment is the strongest negative signal.
-- Score distribution — everyone at 100% ⇒ weak discrimination; most failing badly ⇒
-  ambiguous/poorly-worded questions. Content-quality signals, not usage signals.
-- Retry + score delta — retry with improvement = learning; retry with no improvement =
-  probably a confusing question.
-- Time-to-answer per question — very fast ⇒ guessing/trivial; very long ⇒ confusing wording.
-- Explicit signal: a one-tap 👍/👎 on the results screen — cheap, direct, complements the
-  inferred behavioral proxies rather than replacing them.
+Learner-side metrics (completion rate, score distribution among learners, etc.) are **not
+measurable and not the target** — that interaction happens off-platform, on the LMS, after
+export. Everything below is the educator.
 
-**Creator side** (adoption of the tool itself):
-- "Take the quiz" conversion — of those who saw the answer-key preview, who engaged further?
-- Refinement count before settling — one-shot acceptance ⇒ high first-pass quality; many
-  cycles ⇒ the AI isn't nailing it unprompted.
-- Download vs. take-in-card ratio — is the in-card experience good enough to *be* the
-  product, or is this just a fancy file generator to people?
+**Activation** — did they reach a first real outcome?
+- First successful quiz generated.
+- Zero refinements needed (one-shot acceptance) — a strong positive quality signal on its
+  own, not just a usage stat.
+- Previewed via "Take the quiz" before exporting — shows active review, not blind trust.
+
+**Engagement / export intent** — this is the "did they show intent to download" ask:
+- "Download .h5p" click — generic export intent.
+- **A more precise signal already sitting in the code, unused:** `/play/<token>` doesn't
+  just have a download link — it has *separate* "Import into **h5p.com**" and "Import into
+  **Lumi**" links (`app/play/[token]/page.tsx`). A click on the h5p.com link specifically is
+  platform-specific intent, a materially stronger signal than a generic download. **The
+  ChatGPT widget itself only offers a generic "Download .h5p" today** — no h5p.com/Lumi-
+  specific link in-card — worth adding there too if this signal matters in the primary
+  surface, not just on `/play`.
+- "Open in H5P player ↗" click — a lighter-weight intent (reviewing before deciding).
+
+**Retention:**
+- Does the same educator come back to generate another quiz later, in a new conversation?
+- Is refinement count trending down over time (product improving) or up (regressing)?
+
+**The strongest quality-proxy we actually have, given learner data is out of reach:
+abandonment.** Generated, then never previewed, never downloaded, never clicked toward
+h5p.com — the conversation just stops. That's the closest thing to an implicit "wasn't good
+enough to use" we can observe. Pair *low refinement + strong export intent* (good) against
+*generated-then-abandoned* (bad) as the practical proxy feeding the loop below.
 
 **Operational (delivery quality, not content quality):** real-H5P vs. fallback rate — also
 finally answers the open README question on how often the fallback shows up in practice.
+
+## Lead-generation signal for h5p.com — what we can and can't claim
+
+We can cleanly measure **intent**: click-through rate specifically toward the h5p.com link,
+as a fraction of quizzes generated — a real, defensible number ("X% of AI-generated quizzes
+result in a click toward h5p.com").
+
+We **cannot** claim an actual **lead or conversion** from that alone — a click isn't a
+signup, and we have no visibility past our own link without h5p.com's cooperation. Decided
+2026-09-11: **UTM/referral parameter now**, measuring two things — **total clicks** and
+**unique users who clicked**:
+
+- **Mechanism:** route the h5p.com/Lumi links through our own redirect endpoint
+  (e.g. `/api/track/h5p-click?token=<token>&uid=<anon-id>&target=h5pcom|lumi`) instead of a
+  raw `<a href>`. It logs `{target, token, anon uid, timestamp}`, then 302s to the real URL
+  with a UTM param attached (`utm_source=interactify` or similar). No JS beacon needed;
+  survives new-tab/middle-clicks.
+- **Total clicks:** a plain counter increment on that endpoint — no identity needed at all.
+- **Unique users:** use **`openai/subject`** — an anonymized user id the Apps SDK sends on
+  every tool call, server-side, already provided by OpenAI (confirmed via their developer
+  community docs, 2026-09-11) — captured when `create_h5p_quiz` runs, and embedded (as a
+  derived id, not the raw value) into the `downloadUrl`/`playUrl` we generate, so a later
+  click on the tracking redirect can be deduplicated against it.
+- **Real caveat, not glossed over:** `openai/subject` is ChatGPT/Apps-SDK-specific. Claude
+  Desktop, MCP Inspector, and other MCP clients likely send no equivalent — so "unique
+  users" will be reliable for ChatGPT usage and probably degrade to total-clicks-only,
+  no dedup, elsewhere. An honest asymmetry, not a uniform mechanism.
+- **Still true regardless:** this measures *intent*, not conversion. True closed-loop
+  attribution (clicked *and* actually created an account) needs H5P sharing data back with
+  us, or — ties to the H5P API roadmap note in `reports/builder_priorities.md` — their own
+  upcoming create/extract API, which could turn "clicked toward h5p.com" into "authenticated
+  with h5p.com through us." A future amplifier, not something to promise today.
+
+## Understanding refinement patterns — a real access boundary, and what works instead
+
+We **cannot** see or store the ChatGPT conversation — our tool only ever receives the
+*structured arguments* of a call (`title`, `questions`, `passPercentage`), never the
+natural-language chat that led ChatGPT to construct them. Not a build gap; the access
+boundary of being an MCP tool. Even a hypothetical workaround would be a real privacy
+overreach beyond what this feature needs. Two things genuinely available instead:
+
+1. **Diff-based classification (objective, always available).** Successive versions of the
+   same quiz lineage pass through us — comparing before/after tells us *what* changed
+   (question added/removed, answer options changed, wording changed, pass mark changed)
+   with zero access to natural language.
+2. **A new optional schema field, `refinementNote`** — description instructs ChatGPT: *"If
+   this is a refinement of a previous quiz, briefly say what changed and why."* The model
+   *voluntarily* self-reports a short summary because we asked (same lever as everything
+   else here: tool description/schema shapes behavior) — not us intercepting anything.
+
+Together — objective diff (*what*) + the model's own stated reason (*why*) — this is a real,
+buildable picture of refinement patterns. It feeds the slow loop especially directly: the
+more a specific refinement reason recurs in aggregate, the more directly it becomes
+tool-description guidance, so that class of refinement stops being needed at all.
 
 ## The feedback loop — two speeds; model fine-tuning is explicitly not on the table
 
@@ -78,10 +171,11 @@ only lever established to work (tool description + tool response text):
 
 ## Privacy stance
 
-Education data about real learners — anonymous by default (a random session id, never a
-name or email) unless a school explicitly opts into identified tracking, which is a much
-bigger compliance surface (FERPA territory for K-12 use). Decide this deliberately, not by
-omission.
+This is educator usage data, not learner data (learners are out of reach — see above), which
+narrows the concern considerably — but still: anonymous/pseudonymous by default (a session
+or workspace id, not necessarily tied to a real name/email unless the educator is already
+authenticated to us for some other reason). If a future feature (accounts, saved libraries)
+introduces real identity, revisit this deliberately rather than by omission.
 
 ## New architectural fact: this needs a real database
 
@@ -103,10 +197,12 @@ Upstash, etc.), not an ad hoc pick.
 
 ## Open questions
 
-- Where does the creator actually see this feedback — appended to the widget's results
+- Where does the educator actually see this feedback — appended to the widget's results
   view, a small `/insights/<token>` page, or both?
 - What's the right aggregation window/sample size before a "quality nudge" is trustworthy
   enough to surface in a tool response, versus noise from too few data points?
-- Does the explicit 👍/👎 belong on the learner's results screen, the creator's card, or both
-  — they're answering different questions ("did I enjoy this" vs. "did this work for my
-  class").
+- Should the h5p.com/Lumi-specific import links be added to the in-card widget (today only
+  on `/play`), given that's where the stronger export-intent signal lives?
+- How do we distinguish "educator previewing" from "a learner using a shared `/play` link"
+  when both produce identical xAPI events? Worth resolving before trusting that data too
+  heavily as a quality proxy.

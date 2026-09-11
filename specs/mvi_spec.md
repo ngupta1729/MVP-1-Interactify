@@ -10,6 +10,21 @@ then Claude and other MCP clients) turns learning content into an interactive H5
 you refine by chatting, and export as a valid `.h5p` file. Same model as Kahoot, which
 ships both a ChatGPT App *and* an MCP server.
 
+## Approach
+
+This is **MVP 1** — the first of a staged build, not a single upfront plan.
+
+- **Problem:** educators already draft content with AI, but turning it into something
+  interactive still means a separate H5P authoring tool.
+- **Use case:** describe content in ChatGPT (or any MCP client) → get back a real,
+  interactive H5P Question Set → refine by talking → export.
+- **Scope:** this document, in full, below.
+- **Status:** ✅ shipped, tagged `mvp-1`.
+
+Full roadmap (MVP 1 / MVP 2 / candidates beyond that): see "Approach" in
+[`README.md`](../README.md). MVP 2 (usage analytics + feedback loop) is scoped separately
+at [`specs/feedback_loop_spec.md`](feedback_loop_spec.md).
+
 ## Demo objective (what the cohort demo must get feedback on)
 
 1. **Primary — the conversational handoff.** Does "content in → interactive activity out →

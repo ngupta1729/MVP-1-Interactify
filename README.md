@@ -68,28 +68,54 @@ today:
   how many teachers and creators start; the "now go rebuild this in another tool" step is a
   live friction point, not a speculative one.
 
-## Scope
+## Approach
 
-**Crawl (this version) — in scope:**
+Built in stages, each with its own problem framing, use case, and scope — not committed to
+a single upfront plan. Each stage has a full spec of its own; this is the roadmap view.
 
-- One activity type: **H5P Question Set**, built from multiple-choice questions
-  (single- or multi-correct, optional per-answer feedback, configurable pass mark).
-- A standard MCP server (`/api/mcp`) exposing `create_h5p_quiz` — works from ChatGPT,
-  Claude Desktop, Claude Code, or any MCP client, not just one platform.
-- An inline, interactive preview card in ChatGPT (Apps SDK), rendering the **real** H5P
-  runtime where the platform allows it, falling back to a matching lightweight version
-  where it doesn't.
-- A full-page browser player (`/play/<token>`) for clients without inline rendering.
-- A downloadable, standards-valid `.h5p` file, importable into any H5P-compatible platform.
-- Conversational refinement — re-describe what should change; the activity rebuilds.
+### MVP 1 — generate a real, playable H5P activity from AI conversation · ✅ shipped (`mvp-1`)
 
-**Explicitly out of scope (deferred, not forgotten):**
+- **Problem:** educators already draft content with AI, but turning it into something
+  interactive still means a separate H5P authoring tool.
+- **Use case:** describe content in ChatGPT (or any MCP client) → get back a real,
+  interactive H5P Question Set → refine by talking → export.
+- **In scope:** one activity type (H5P Question Set, multiple-choice); a standard MCP
+  server (`/api/mcp`) exposing `create_h5p_quiz`, working from any MCP client; an inline
+  card in ChatGPT rendering the **real** H5P runtime with a graceful fallback; a full-page
+  browser player (`/play/<token>`); a downloadable, standards-valid `.h5p`; conversational
+  refinement.
+- **Explicitly out of scope (deferred, not forgotten):** activity types beyond Question
+  Set; ChatGPT app directory listing; accounts/saved-quiz libraries/usage limits (see
+  [Risks](#risks)); hand-editing individual H5P fields; publish-back-to-platform.
+- Full spec: [`specs/mvi_spec.md`](specs/mvi_spec.md).
 
-- Any activity type beyond Question Set (drag-and-drop, flashcards, etc.).
-- Listing in the ChatGPT app directory / formal app review.
-- Accounts, saved-quiz libraries, usage limits — see [Risks](#risks) on what this trades away.
-- Hand-editing individual H5P fields, or importing an existing `.h5p` to modify.
-- Any "publish back to a hosted platform" round-trip — gated on the business-model question above.
+### MVP 2 — usage analytics + feedback loop · 🟨 scoped, not yet built
+
+- **Problem:** an open, portable `.h5p` gives no visibility into whether a generated
+  activity is actually good, or whether educators come back — and hosting alone isn't a
+  reason to pay for anything once AI can generate the file directly.
+- **Use case:** capture **educator**-side activation, engagement, and export-intent
+  signals (not learner data — that lives off-platform, on the LMS, outside our reach);
+  surface feedback to the educator; feed the aggregate signal back into what ChatGPT
+  generates next.
+- **In scope:** a capability matrix of which widget surfaces can/can't be tracked;
+  educator-only metrics — activation, engagement, export intent (including toward h5p.com
+  specifically), retention; a two-speed feedback loop into generation quality (per-call
+  response-text nudges + periodic tool-description updates — not model fine-tuning, which
+  isn't ours to do); the project's first real persistent storage.
+- **Out of scope for a first version:** identified/named learner tracking; a full LRS
+  integration; tracking inside the JS fallback runner.
+- Full spec: [`specs/feedback_loop_spec.md`](specs/feedback_loop_spec.md).
+
+### MVP 3+ — not yet scoped
+
+Candidates under discussion, each currently gated on something outside our control:
+
+- **Publish directly to a platform** — blocked on external API gaps at both candidate
+  targets: h5p.com's create/extract API is confirmed coming but not live yet; Moodle's
+  Content Bank has no documented create endpoint today. Tracked in
+  [`reports/builder_priorities.md`](reports/builder_priorities.md).
+- **A second H5P content type** beyond Question Set.
 
 ## Implementation
 
