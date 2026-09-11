@@ -263,4 +263,36 @@ ships, and treat the Moodle spike as optional/lower-priority until then.
 
 ---
 
+## 2026-09-11 — MVP 2 direction: analytics + feedback loop
+
+### Entry — "Before we support push into LMS or H5P, i think more useful is a way to track the user interactions..."
+
+**Asked (user):** Whether tracking user interactions and saving them for feedback would be
+more useful than the LMS/H5P publish work, and how it could be done; then, to be explicit
+about which widget surfaces can/cannot emit events, to suggest meaningful measures beyond
+clicks (satisfaction/activation), and how that feedback could automatically improve
+ChatGPT's output.
+
+**Answer (Claude):** Confirmed the pivot is well-grounded — it's one of the four candidate
+answers already tracked in `builder_priorities.md` for the core incentive question, and
+unlike publish-to-platform it has no external API blocker. Walked the capability matrix:
+real xAPI is only natively available where the real H5P runtime renders (in-card, via
+`H5P.externalDispatcher` — same-window thanks to `embedType:"div"`; and `/play/<token>`,
+separately); the JS fallback can only produce signal if we instrument it ourselves; download
+and "open elsewhere" give click-intent only, never outcome — structurally, permanently.
+Proposed activation + satisfaction metrics split by learner (completion, score distribution,
+retry-with-improvement, time-to-answer, an explicit 👍/👎) vs. creator (take-the-quiz
+conversion, refinement count, download-vs-in-card ratio). Proposed a two-speed feedback
+loop back into generation quality — per-call nudges riding in the tool's own response text
+(genuinely automatic), and periodic tool-description updates from aggregate trends (reviewed,
+not continuous) — explicitly ruling out model fine-tuning as unavailable to us. Wrote
+`specs/feedback_loop_spec.md` (full spec, mirrors `mvi_spec.md`'s shape) and logged the
+sequencing decision in `builder_priorities.md` and `journey.md`.
+
+**Changed:** `specs/feedback_loop_spec.md` (new) · `reports/builder_priorities.md` (MVP 2
+direction entry) · `journey.md` (Key decisions + Running summary) · `journey-log.md` (this
+entry).
+
+---
+
 <!-- END OF LOG -->

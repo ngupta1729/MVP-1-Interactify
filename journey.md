@@ -100,6 +100,7 @@ concrete project idea and ship a first version to react to.
 | 2026-09-08 | **Stateless: a quiz's id = gzip+base64url of its `QuizSpec`** | Rebuilds on any Vercel instance; no DB / blob store to set up during a binge | In-memory Map (breaks across lambdas) · Vercel Blob (setup overhead) |
 | 2026-09-08 | Deploy target: **Vercel** (`project2608b.vercel.app`), production, no deployment protection | Public HTTPS URL needed for an MCP server; participant chose Vercel; CLI already authed | Self-host · ngrok tunnel |
 | 2026-09-08 | **Reframe: the product is H5P's AI capability layer over MCP**, not "an H5P ChatGPT App". ChatGPT is the first interface; Claude + other MCP clients next. | Kahoot ships both a ChatGPT App and an MCP server; OpenAI's Apps SDK is MCP-based and portable; a capability layer is bigger and more defensible than a single-platform plugin. Costs ~nothing — the v1 server already is a standard MCP server; the ChatGPT bits are additive `_meta` + a `ui://` component. | Stay "ChatGPT App" only |
+| 2026-09-11 | **MVP 2 direction: usage analytics + feedback loop, ahead of publish-to-platform** | No external API dependency blocking it (unlike publish-to-platform, gated on h5p.com/Moodle gaps); tests the "living loop" incentive hypothesis directly with real data instead of guessing; reuses the only proven lever for shaping ChatGPT's output (tool description + response text) rather than requiring a model we can't train | Publish-to-platform first (rejected — blocked on external APIs neither platform has yet) |
 | 2026-09-11 | **One repo, one project folder, through MVP2 and beyond** — not a new repo per milestone | Vercel URL / ChatGPT connector / GitHub App auth / journey record all key off this repo's identity; a new repo repeats that setup cost for no benefit. Git already solves "isolate risky work" via branches, and "mark a boundary" via tags | New repo per MVP (rejected — fragments history and deployment identity) |
 | 2026-09-08 | Studied the **Kahoot ChatGPT app** (support docs) as the reference UX. Confirms: draft-first (create/update only), ≤20 questions/prompt, inline preview, NL edits, ~2 question types, and a **button that opens the draft back in the platform**. Kahoot monetizes save/host (free tier = 5 questions), not generation. | Best concrete validation of the model. Surfaces our v1 UX gap (manual `.h5p` download vs. one-click "open in [platform]") **and** the open monetisation/incentive question — Kahoot's format is proprietary so its host lock-in works; `.h5p` is open, so neither the gap's value nor the incentive is proven yet. Both → Stage 1 user research. | — |
 
@@ -154,6 +155,23 @@ earlier stages complete.
 ---
 
 ## Running summary
+
+**2026-09-11 (later) —** Scoped **MVP 2: usage analytics + feedback loop**, ahead of the
+publish-to-platform idea (which is blocked on external API gaps at both candidate targets —
+see below). Mapped which widget surfaces can produce real signal: only where the real H5P
+runtime actually renders (in-card, same-window via `H5P.externalDispatcher` since
+`embedType:"div"` avoids an iframe boundary; and separately on `/play/<token>`) — the JS
+fallback needs its own instrumentation, and download/"open elsewhere" are permanently opaque
+by design. Defined activation + satisfaction metrics split by learner (completion, score
+distribution, retry-with-improvement, time-to-answer, an explicit 👍/👎) and creator
+(take-the-quiz conversion, refinement count, download-vs-in-card ratio) — deliberately not
+just click counts. Designed a two-speed feedback loop back into generation quality: per-call
+nudges riding in the tool's own response text (genuinely automatic, no new pipeline) and
+periodic tool-description updates from aggregate trends (reviewed, not continuous) — model
+fine-tuning ruled out as not ours to do. First time this project needs real persistent
+storage (interaction data isn't reconstructable from a link the way quiz content is) — noted
+for the `marketplace` skill when building starts, not decided ad hoc. Full spec:
+`specs/feedback_loop_spec.md`.
 
 **2026-09-11 —** Closed out Crawl / **tagged `mvp-1`**. Confirmed the real H5P runtime
 renders inline in the ChatGPT card (B4, quiz-v5) — then live testing surfaced and fixed three
