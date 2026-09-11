@@ -76,25 +76,40 @@ Four sources feed the loop by now; when they disagree, trust in this order:
 
 ## Embedded satisfaction survey
 
-Goal: direct signal on whether the educator had a good experience, and what they'd improve —
-correcting for everything else in this spec being inferred or self-summarized.
+Goal — **revised 2026-09-11, deliberately not about content quality**: whether the educator
+is happy overall, where they intend to use the generated `.h5p`, and what would make the
+*experience* (the tool, not this specific quiz) better. Content-quality signal is already
+covered elsewhere (`refinementNote`, diff-based classification, abandonment) — this survey
+exists for the three things nothing else in this spec captures.
 
-**Design — decided 2026-09-11: one question, one screen.**
+**Design — revised 2026-09-11: two mandatory taps, one optional line, still one screen.**
 
-> **"Would you use this quiz as-is?"**
-> 👍 Yes, as-is · 🤏 Yes, with a few tweaks · 👎 No, I'd rewrite it
-> *(always-visible line beneath, optional — the tap is what's required):* "Anything
-> specific you'd change?"
+> **1. How happy are you with this quiz?** *(mandatory tap)*
+> 😊 Happy · 😐 It's okay · 😞 Not happy
+>
+> **2. Where will you use it?** *(mandatory, one tap on a chip)*
+> 🏫 My LMS (Moodle/Canvas/etc.) · 🌐 My own site · 🔗 Shared directly with students ·
+> 🤔 Not sure yet · Other
+>
+> **3. What would make this experience better?** *(optional free text)*
 
-The 3-way tap gives the satisfaction signal and is the mandatory part (below); the free-text
-line is where "what would you improve" gets caught, for whoever bothers to type — never
-forced, even though the tap is.
+Both taps are mandatory — not just for coverage, but because each carries independent
+strategic value on its own (see below); the free-text line stays optional, same "tap
+required, typing isn't" principle as before, just extended to two taps instead of one.
+
+**Why "where will you use it" matters beyond this survey:** it's a direct, unprompted read
+on platform destination — real market evidence for which integration to prioritize under
+MVP 3+'s "publish directly to a platform" (currently blocked on external API gaps at both
+h5p.com and Moodle, tracked in `reports/builder_priorities.md`). If responses skew heavily
+toward one destination, that's a genuine signal for sequencing that work once its API
+blocker clears, rather than guessing.
 
 **Moment — revised 2026-09-11: `Download .h5p` only, mandatory, blocking the download.**
 Narrower and stricter than the original design: only the `Download .h5p` button is gated —
 **Open in H5P player and the h5p.com/Lumi import links are unaffected**, exactly as before.
-Clicking Download shows the one-tap question first; the file doesn't open until one of the
-three options is tapped. The optional text line never blocks anything — only the tap does.
+Clicking Download shows the two-tap question set first; the file doesn't open until both
+the happiness and destination taps are answered. The optional text line never blocks
+anything — only the two taps do.
 
 Why `Download .h5p` specifically, and why mandatory: this is a deliberate reversal of the
 original non-blocking design, made explicitly to trade a little friction at the moment of
@@ -110,8 +125,8 @@ worth remembering when reading the resulting data, not reasons to reconsider the
 
 **Implementation shape, given what already exists:** the Download button's handler
 currently calls `openExternal(data.downloadUrl)` directly on click — change it to first
-render the one-tap question in place (`keyView()`, almost always the view showing at this
-point) and only call `openExternal` once a tap is recorded. The other two export handlers
+render the two-tap question set in place (`keyView()`, almost always the view showing at
+this point) and only call `openExternal` once both taps are recorded. The other two export handlers
 (`full`, and any future h5p.com/Lumi links) are untouched. A session-local flag (same
 pattern as `mode`/`realState`) means a second Download click, after the first is answered,
 goes straight through.
