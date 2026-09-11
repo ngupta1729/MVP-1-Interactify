@@ -221,4 +221,46 @@ created and pushed.
 
 ---
 
+## 2026-09-11 — Publish-to-platform round trip: two external blockers found
+
+### Entry — "Do you think the created h5p can be automatically hosted on h5p if they already have an H5P account."
+
+**Asked (user):** Whether a generated `.h5p` could be auto-published to a user's existing
+h5p.com account by having them "just provide their credentials, or login."
+
+**Answer (Claude):** Flagged the credentials idea as a hard no regardless of build stage —
+collecting a raw password for a third-party service is a phishing-shaped anti-pattern, likely
+breaches h5p.com's ToS, and creates needless breach liability. Right shape if supported: OAuth
+(user authenticates on h5p.com's own page, we get a scoped/revocable token, never see the
+password). Checked h5p.com's developer docs — found no public partner API for this today.
+Flagged Moodle/WordPress as more plausible near-term targets given their documented,
+token-based web-services APIs.
+
+**Follow-up (user):** "lets do it for Moodle to begin with... This has nothing to do with the
+plugins?"
+
+**Answer (Claude):** No — it's central, not independent. Moodle runs two non-interoperable H5P
+systems: legacy third-party `mod_hvp` (H5P-org maintained) vs. native `mod_h5pactivity` +
+Content Bank (Moodle core since 3.9, the one Moodle itself is migrating schools *toward*).
+Checked Moodle's own web-services docs and community forum: **no documented web service to
+create a new Content Bank item** — only delete/rename/set-visibility exist. `core_files_upload`
+can push a file into a user's draft area (documented, real), but finishing the "make it a live
+activity" step has no confirmed API path. Recommended a real spike against a test Moodle
+instance before committing further, rather than assuming it's buildable.
+
+**Follow-up (user):** "Note h5p would launch an API that will allow programmatic creation, and
+extraction of h5ps. It is not available yet."
+
+**Answer (Claude):** Logged this as a tracked external dependency rather than losing it —
+`reports/builder_priorities.md` updated with both blockers side by side (h5p.com's confirmed-
+but-unshipped API; Moodle's confirmed content-bank creation gap), and a durable cross-session
+memory saved so a future session doesn't re-research or re-ask about either. Recommendation:
+don't build a workaround for either gap now — track h5p.com's API as the cleaner path once it
+ships, and treat the Moodle spike as optional/lower-priority until then.
+
+**Changed:** `reports/builder_priorities.md` (new tracked item, two sub-blockers) ·
+`journey-log.md` (this entry) · new memory `h5p-publish-api-roadmap`.
+
+---
+
 <!-- END OF LOG -->
