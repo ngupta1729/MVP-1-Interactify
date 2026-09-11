@@ -494,7 +494,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       // fresh instance into a *new* h5pNode is unreliable - it can silently render
       // nothing and we'd fall back to the lookalike. Once we have one working
       // instance, reuse it instead of asking h5p-standalone to build another.
-      if (realState === "ok" && h5pNode && h5pNode.querySelector(".h5p-question, .h5p-question-set")){
+      if (realState === "ok" && h5pNode && h5pNode.querySelector(".h5p-question, .h5p-question-set, .h5p-joubelui-button")){
         mode = "real"; render();
         return;
       }
