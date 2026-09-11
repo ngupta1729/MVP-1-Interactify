@@ -63,6 +63,47 @@ even possible varies sharply by surface:
 (in-card or on `/play`), or wherever we deliberately instrument the fallback. Download and
 "open elsewhere" give intent, never outcome.
 
+## Signal strength — most to least direct
+
+Four sources feed the loop by now; when they disagree, trust in this order:
+
+1. **Explicit survey response** (below) — direct from the human, unprompted. Most trustworthy.
+2. **`refinementNote`** — the model's own summary of what/why it changed. Mediated, but
+   still tied to real intent.
+3. **Diff-based structural classification** — objective, mechanical, no "why."
+4. **Behavioral proxies** (abandonment, export intent, retry) — inferred, weakest
+   individually, but free and always-on, needs no one to fill anything in.
+
+## Embedded satisfaction survey
+
+Goal: direct signal on whether the educator had a good experience, and what they'd improve —
+correcting for everything else in this spec being inferred or self-summarized.
+
+**Design — two-step, non-blocking, skippable at every step:**
+- **Step 1** (always visible, tiny footprint): a one-tap reaction — 😊 / 😐 / 😞. Lower
+  friction than a star rating or NPS scale, enough resolution to be useful.
+- **Step 2** (appears only after Step 1, itself skippable): a few quick-tap improvement
+  chips ("Too easy," "Too hard," "Wrong content type," "Wording/clarity," "Something else")
+  plus an optional free-text box, with clear Submit/Skip actions. Chips drive response rate;
+  free text lets people say more when they want to.
+
+**Where, concretely — grounded in the actual widget code, not every view:** the "at rest,
+reviewing" moments only — `keyView()` (the default, most-seen view) and `resultsView()`
+(after finishing a preview). **Not** the actively-interactive views (mid-quiz) — those
+re-render on every click, so anything placed there would nag constantly, not just appear
+once. A simple session-local flag (same pattern as the existing `mode`/`realState` widget
+state) stops it reappearing once answered or dismissed.
+
+**Build cost is low:** a POST from the widget to a new endpoint, well within the CSP already
+granted (`connect_domains` already covers exactly this pattern — no new sandbox permission
+needed). Same database as the rest of MVP 2; tied to `openai/subject` for the same
+anonymous-dedup reasons as the h5p.com click tracking.
+
+**Worth watching, not solving on day one:** survey fatigue and response bias — showing this
+on every card risks annoying people and skewing responses toward strong opinions only. Keep
+it easily dismissible from day one; a frequency cap is a reasonable follow-up once real
+response-rate data exists, not something to over-build before then.
+
 ## What to measure — educator activation + engagement, not click counts
 
 Learner-side metrics (completion rate, score distribution among learners, etc.) are **not
