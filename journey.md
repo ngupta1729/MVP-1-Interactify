@@ -11,8 +11,8 @@
 | | |
 |---|---|
 | **Stage** | 0 — Get Started Building |
-| **Last milestone** | First version built & deployed — https://project2608b.vercel.app — 2026-09-08 |
-| **Next action** | In ChatGPT (Work workspace): re-run the tool → **▶ Take the quiz** — does the **real H5P Question Set** render in the card, or fall back to the lightweight runner? [MVP 1.3 ChatGPT / B4 spike] · import a `.h5p` into h5p.com/Lumi · record the demo (`sprint-demo-prep`). See `docs/mvp-log.md`. |
+| **Last milestone** | **`mvp-1` tagged** — real H5P runtime confirmed rendering inline in the ChatGPT card (with a graceful lookalike fallback), hardened against two real repeat-use bugs, GitHub repo established (`MVP-1-Interactify`), README rewritten as an executive product spec — 2026-09-11 |
+| **Next action** | Scope MVP 2 (candidates: a second H5P content type; the prompt-vs-structured-input branch point discussed and parked). Finish linking Vercel↔GitHub for auto-deploy (blocked on a one-time GitHub App authorization — see Open questions). Still open from Crawl: confirm a `.h5p` imports/plays in h5p.com or Lumi; record the demo. |
 | **Project idea** | **H5P AI capability layer (MCP)** — any AI assistant (ChatGPT first, then Claude/other MCP clients) turns content into interactive H5P activities via an MCP server; refine conversationally, export `.h5p`. Same model as Kahoot (ships a ChatGPT App **and** an MCP server). Autonomy: **Level 2 — Collaborator**. |
 | **Goal** | Crawl→Walk→Run. Crawl = launchable MVP this week. Program ends **Sep 18, 2026**. |
 | **Open risks in focus** | trajectory (Stage 0), then value (Stage 1) |
@@ -69,10 +69,14 @@ concrete project idea and ship a first version to react to.
 - [x] **MVP 1.1 (Claude Desktop)** — `/play/<token>` browser-playable link — **works**; quiz plays, so the `.h5p` is confirmed to play (not just structurally valid) — 2026-09-09
 - [x] **MVP 1.2 (Claude Desktop)** — inline MCP-UI resource — **Claude Desktop does not render it**; inline experience comes from ChatGPT instead — 2026-09-09
 - [x] **MVP 1 (ChatGPT)** — connector added (in the **Work/Business workspace**); ChatGPT calls the tool and **renders the inline card** (answer key + Play/Download) — 2026-09-09
-- [~] **MVP 1.1 (ChatGPT)** — "▶ Take the quiz" in the card: a self-contained JS quiz runner (answer/check/score) — the skybridge sandbox blocks embedding the real H5P runtime (external script AND iframe), so this mirrors Kahoot's self-contained inline preview; deployed, awaiting an in-ChatGPT test — 2026-09-09
-- [~] **MVP 1.2 (ChatGPT)** — in-card quiz restyled against H5P's own CSS so it reads as a real H5P Question Set (progress dots, pill options in H5P colours, score bar + star, H5P footer); deployed, awaiting an in-ChatGPT test — 2026-09-09
-- [~] **MVP 1.3 (ChatGPT)** — spike: run the *real* H5P runtime in the card. Root-caused B2's hang (h5p-standalone defaults to iframe embed → ChatGPT's `frame-src 'none'` blocks the `about:blank` iframe). Fix: `embedType:"div"` (no iframe), assets from our origin via `resource_domains`/CORS. Widget tries real H5P with a 12s watchdog, falls back to the B3 JS runner on failure — no regression. Deployed `quiz-v5`, awaiting an in-ChatGPT test — 2026-09-10
-  - remaining: confirm in ChatGPT whether real H5P renders or falls back · `OPENAI_API_KEY` on Vercel · confirm `.h5p` imports into h5p.com/Lumi · record demo
+- [x] **MVP 1.1 (ChatGPT)** — "▶ Take the quiz" in the card: a self-contained JS quiz runner (answer/check/score) — the skybridge sandbox blocks embedding the real H5P runtime (external script AND iframe), so this mirrors Kahoot's self-contained inline preview — 2026-09-09
+- [x] **MVP 1.2 (ChatGPT)** — in-card quiz restyled against H5P's own CSS so it reads as a real H5P Question Set (progress dots, pill options in H5P colours, score bar + star, H5P footer) — 2026-09-09
+- [x] **MVP 1.3 (ChatGPT)** — real H5P runtime in the card, confirmed working. Root-caused B2's hang (h5p-standalone defaults to iframe embed → ChatGPT's `frame-src 'none'` blocks it); fixed with `embedType:"div"` + `resource_domains`/CORS from our origin. Confirmed live in ChatGPT — 2026-09-10/11
+- [x] **Real-H5P hardening (quiz-v7 → v9)** — three repeat-use bugs found via live testing and fixed: (1) mount point had to be attached to the document before `H5P.init()` runs, plus richer fallback diagnostics; (2) clicking "Take the quiz" a second time re-mounted from scratch and silently failed (h5p-standalone's globals aren't fully reset) — fixed by reusing the mounted instance instead; (3) that same reuse kept showing *stale* content after a conversational edit — fixed by invalidating the cached instance whenever the underlying quiz token changes — 2026-09-11
+- [x] **GitHub repo established** — `github.com/ngupta1729/MVP-1-Interactify`, full history pushed — 2026-09-11
+- [x] **README rewritten as an executive-facing product spec** — problem/value/why-now/scope/risks/open-questions/design-decisions + a Mermaid architecture diagram — 2026-09-11
+- [x] **`mvp-1` tagged** — decision: keep one repo/folder through MVP2+ (branches for risky work, tags for milestone boundaries) rather than forking per milestone — 2026-09-11
+  - remaining: confirm `.h5p` imports into h5p.com/Lumi · finish Vercel↔GitHub auto-deploy link · record demo
   - full log: `docs/mvp-log.md` (Track A = Claude Desktop, Track B = ChatGPT)
 - [ ] App demoed, cohort feedback gathered
 - [ ] Feedback captured, plan updated
@@ -96,6 +100,7 @@ concrete project idea and ship a first version to react to.
 | 2026-09-08 | **Stateless: a quiz's id = gzip+base64url of its `QuizSpec`** | Rebuilds on any Vercel instance; no DB / blob store to set up during a binge | In-memory Map (breaks across lambdas) · Vercel Blob (setup overhead) |
 | 2026-09-08 | Deploy target: **Vercel** (`project2608b.vercel.app`), production, no deployment protection | Public HTTPS URL needed for an MCP server; participant chose Vercel; CLI already authed | Self-host · ngrok tunnel |
 | 2026-09-08 | **Reframe: the product is H5P's AI capability layer over MCP**, not "an H5P ChatGPT App". ChatGPT is the first interface; Claude + other MCP clients next. | Kahoot ships both a ChatGPT App and an MCP server; OpenAI's Apps SDK is MCP-based and portable; a capability layer is bigger and more defensible than a single-platform plugin. Costs ~nothing — the v1 server already is a standard MCP server; the ChatGPT bits are additive `_meta` + a `ui://` component. | Stay "ChatGPT App" only |
+| 2026-09-11 | **One repo, one project folder, through MVP2 and beyond** — not a new repo per milestone | Vercel URL / ChatGPT connector / GitHub App auth / journey record all key off this repo's identity; a new repo repeats that setup cost for no benefit. Git already solves "isolate risky work" via branches, and "mark a boundary" via tags | New repo per MVP (rejected — fragments history and deployment identity) |
 | 2026-09-08 | Studied the **Kahoot ChatGPT app** (support docs) as the reference UX. Confirms: draft-first (create/update only), ≤20 questions/prompt, inline preview, NL edits, ~2 question types, and a **button that opens the draft back in the platform**. Kahoot monetizes save/host (free tier = 5 questions), not generation. | Best concrete validation of the model. Surfaces our v1 UX gap (manual `.h5p` download vs. one-click "open in [platform]") **and** the open monetisation/incentive question — Kahoot's format is proprietary so its host lock-in works; `.h5p` is open, so neither the gap's value nor the incentive is proven yet. Both → Stage 1 user research. | — |
 
 **Learnings & concepts**
@@ -119,6 +124,9 @@ concrete project idea and ship a first version to react to.
   living edit/track loop, xAPI analytics, a validity/accessibility guarantee, or selling the
   capability layer directly. Stage 1 user-research question — see `reports/builder_priorities.md`.
 - No users lined up yet for the Final Demo test.
+- Vercel↔GitHub auto-deploy not yet linked — `vercel git connect` fails until the
+  participant grants Vercel's GitHub App access to the new repo (one-time, browser-side;
+  can't be done from the CLI). CLI deploys (`vercel deploy --prod`) work fine meanwhile.
 - Telemetry backup can't reach the server: "no sherpa-b MCP credentials found" — events log locally only. Consider `/shb-doctor`.
 
 ---
@@ -146,6 +154,34 @@ earlier stages complete.
 ---
 
 ## Running summary
+
+**2026-09-11 —** Closed out Crawl / **tagged `mvp-1`**. Confirmed the real H5P runtime
+renders inline in the ChatGPT card (B4, quiz-v5) — then live testing surfaced and fixed three
+real bugs on repeat use: the mount point wasn't attached to the document when `H5P.init()`
+ran (plus added fallback diagnostics so the next failure is self-explanatory); a second
+"Take the quiz" click re-mounted from scratch and silently failed because h5p-standalone
+doesn't fully reset its own globals — fixed by reusing the working instance instead of
+remounting (quiz-v7/v8); that same reuse then kept showing *stale* content after a
+conversational edit — fixed by invalidating the cached instance whenever the quiz's content
+token changes (quiz-v9). Separately: discussed how ChatGPT decides which tool/content-type
+to use (it's entirely the model's call, driven by tool description + schema — no MCP
+mechanism exists for a plugin to dictate ordering or defaults), which shaped a decision for
+the next content-type addition (Option B: one tool with a required, description-guided
+`type` field, no hardcoded default) and surfaced a richer "ask how the user wants to start"
+UX idea that was deliberately **parked**, not built, to protect Crawl scope.
+
+Established the repo on **GitHub** (`ngupta1729/MVP-1-Interactify`, full history pushed) and
+rewrote `README.md` as an **executive-facing product spec** (why/problem, value for user,
+value for business — explicitly flagged unresolved — why now, scope, implementation, risks,
+open questions, design decisions, a Mermaid architecture diagram). Vercel↔GitHub auto-deploy
+is pushed but not yet linked — blocked on a one-time GitHub App authorization the participant
+still needs to grant; CLI deploys remain the working path until then.
+
+Asked whether MVP 2 should get its own repo/project folder — **decided no**: this repo's
+identity is load-bearing (production URL, the ChatGPT connector, GitHub App auth, the journey
+record itself), so a fork repeats that setup cost for zero benefit. Instead: branch for
+risky/sizeable MVP2 work, tag milestone boundaries (`mvp-1` done today) — git already solves
+what a new repo was being reached for.
 
 **2026-09-08 (build) —** Built and deployed the **first version**: a standard MCP server at
 `/api/mcp` with one tool, `create_h5p_quiz`, that turns a structured question list (which the
@@ -222,3 +258,5 @@ Committed as `0bd4f47`. Next: `/coach`, then start building the first version vi
 | 2026-09-08 | Product reframed to "H5P AI capability layer (MCP), ChatGPT first"; `specs/mvi_spec.md`, `journey.md`, `README.md` updated. Kahoot ChatGPT app studied as reference UX. |
 | 2026-09-09 | MVP 1 validated in **Claude Desktop** (custom connector, 7-question quiz E2E). Added MVP 1.1 (`/play/<token>` browser preview link) + MVP 1.2 (inline MCP-UI resource — Claude doesn't render it). `docs/mvp-log.md` started. |
 | 2026-09-09 | **MVP 1 (ChatGPT)** — connector working in the Work/Business workspace; ChatGPT renders the inline widget. **MVP 1.1 (ChatGPT)** — "▶ Play here" embeds the interactive player in the card (`openai/widgetCSP` + CORS); deployed. `docs/mvp-log.md` split into Track A / Track B. |
+| 2026-09-10/11 | Real H5P runtime confirmed rendering in the ChatGPT card (B4, `embedType:"div"`); three repeat-use bugs found live and fixed (mount-timing/diagnostics, reuse-instead-of-remount, stale-content-on-edit invalidation) across `quiz-v5` → `quiz-v9`. |
+| 2026-09-11 | GitHub repo `ngupta1729/MVP-1-Interactify` created, full history pushed. `README.md` rewritten as an executive product spec. Decided: one repo/folder through MVP2+ (branches + tags, not forks). Tagged `mvp-1`. |

@@ -188,4 +188,37 @@ in_progress.
 
 ---
 
+## 2026-09-11 — MVP 1 → MVP 2 boundary
+
+### Entry — "For further improvements for MVP2, should I create a different repo, and project folder?"
+
+**Asked (user):** "Now for further improvements for MVP2, should i create a different repo,
+and project folder?"
+
+**Answer (Claude):** Recommended **no** — keep the same repo and project folder. Reasoning:
+the production URL, the ChatGPT connector, the GitHub App authorization, and the journey
+record itself all key off this repo's identity, so forking repeats real setup cost (new
+Vercel project, reconnect the connector, redo GitHub App auth) for no benefit, and fragments
+the commit history that explains *why* decisions were made. Recommended instead: branch for
+risky/sizeable MVP2 work (a second content type, the parked prompt-vs-structured-input UX),
+tag milestone boundaries in git, and log the transition in `journey.md` — the same tools
+already used to track MVP 1 → MVP 1.3.
+
+**Follow-up (user):** "Do what you suggested in What to do instead, as MVP2 work gets
+bigger."
+
+**Answer (Claude):** Tagged the MVP 1 boundary (`git tag mvp-1`, pushed to GitHub) and
+updated `journey.md` at this milestone boundary: "Where I am now", Stage 0 milestones
+(marked the three previously-partial ChatGPT entries `[x]` done, added the real-H5P
+hardening bugs found via live testing, the GitHub repo, the README rewrite, and the `mvp-1`
+tag itself), a new Key decision row (one repo/folder through MVP2+), a dated Running summary
+paragraph, matching Change log rows, and a new Open-questions bullet for the still-pending
+Vercel↔GitHub auto-deploy link.
+
+**Changed:** `journey.md` (Where I am now, Stage 0 milestones, Key decisions, Open
+questions, Running summary, Change log) · `journey-log.md` (this entry) · git tag `mvp-1`
+created and pushed.
+
+---
+
 <!-- END OF LOG -->
