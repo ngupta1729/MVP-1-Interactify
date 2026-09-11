@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v12.html";
+const WIDGET_URI = "ui://widget/quiz-v13.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -29,6 +29,7 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v9.html",
   "ui://widget/quiz-v10.html",
   "ui://widget/quiz-v11.html",
+  "ui://widget/quiz-v12.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
@@ -141,9 +142,11 @@ const handler = createMcpHandler(
         const playUrl = `${base}/play/${token}`;
         const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
 
-        // Best-effort: never let refinement logging fail the actual tool call.
-        if (typeof previousToken === "string" && previousToken) {
-          try {
+        // Log on EVERY call, not just refinements - "how many users use the
+        // plugin" needs a row per invocation to count distinct anonUid from.
+        // Best-effort: never let this logging fail the actual tool call.
+        try {
+          if (typeof previousToken === "string" && previousToken) {
             const prevSpec = decodeSpec(previousToken);
             const kinds = classifyRefinement(prevSpec, spec);
             await getDb()
@@ -158,9 +161,11 @@ const handler = createMcpHandler(
                   refinementNote: typeof refinementNote === "string" ? refinementNote : null,
                 }),
               });
-          } catch (err) {
-            console.error("create_h5p_quiz: failed to log refinement", err);
+          } else {
+            await getDb().insert(events).values({ quizToken: token, eventType: "generate", anonUid });
           }
+        } catch (err) {
+          console.error("create_h5p_quiz: failed to log usage", err);
         }
 
         const structured = {

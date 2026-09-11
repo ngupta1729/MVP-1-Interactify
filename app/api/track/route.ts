@@ -49,3 +49,46 @@ export async function GET(req: Request) {
   dest.searchParams.set("utm_campaign", "h5p_quiz");
   return NextResponse.redirect(dest.toString(), { status: 302 });
 }
+
+/**
+ * Generic click logging for the widget's own buttons (Take the quiz, Answer
+ * key, Download, Open in H5P player, Reuse, the H5P logo) - fire-and-forget
+ * from lib/h5p/widget.ts, logged the instant the button is clicked and
+ * independent of whatever happens after (e.g. Download's click always
+ * counts here, even if the mandatory survey is never completed - that's
+ * recorded separately in survey_responses, which is a different question).
+ * POST /api/track/click  body: { token, eventType, anonUid? }
+ */
+const CLICK_EVENT_TYPES = new Set([
+  "click_take_quiz",
+  "click_answer_key",
+  "click_download",
+  "click_open_player",
+  "click_reuse",
+  "click_logo",
+]);
+
+export async function POST(req: Request) {
+  let body: { token?: unknown; eventType?: unknown; anonUid?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ ok: false }, { status: 400 });
+  }
+  const token = typeof body.token === "string" ? body.token : "";
+  const eventType = typeof body.eventType === "string" ? body.eventType : "";
+  if (!token || !CLICK_EVENT_TYPES.has(eventType)) {
+    return Response.json({ ok: false }, { status: 400 });
+  }
+
+  try {
+    await getDb().insert(events).values({
+      quizToken: token,
+      eventType,
+      anonUid: typeof body.anonUid === "string" ? body.anonUid : null,
+    });
+  } catch (err) {
+    console.error("track/click: failed to log", err);
+  }
+  return Response.json({ ok: true });
+}

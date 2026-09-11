@@ -560,11 +560,27 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     } catch (e) {}
   }
 
+  // Fire-and-forget click logging - counts the click itself, independent of
+  // whatever happens after (e.g. click_download always counts even if the
+  // survey it triggers is never completed; that's a separate question,
+  // answered by whether a survey_responses row exists for this token).
+  function logClick(eventType){
+    try {
+      fetch(assetOrigin() + "/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: data && data.token, eventType: eventType, anonUid: data && data.anonUid }),
+        keepalive: true,
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
   function wire(){
     var by = function(id){ return document.getElementById(id); };
 
     var start = by("start");
     if (start) start.onclick = function(){
+      logClick("click_take_quiz");
       // h5p-standalone's core library sets globals (window.H5P, window.H5PIntegration)
       // the first time it loads and never fully resets them, so mounting a *second*
       // fresh instance into a *new* h5pNode is unreliable - it can silently render
@@ -580,7 +596,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     };
 
     var key = by("key");
-    if (key) key.onclick = function(){ mode = "key"; render(); };
+    if (key) key.onclick = function(){ logClick("click_answer_key"); mode = "key"; render(); };
 
     var check = by("check");
     if (check) check.onclick = function(){
@@ -597,18 +613,22 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // Download is gated by the mandatory survey; the footer "Reuse" link is
     // the same action under a different label, so it's gated the same way -
     // otherwise it's a one-click bypass sitting right next to the real gate.
-    function startDownload(){
+    // The click itself is logged unconditionally, every time, regardless of
+    // whether the survey ends up completed - that's a separate question,
+    // answered by whether a survey_responses row exists for this token.
+    function startDownload(logType){
+      logClick(logType);
       if (surveyDone){ openExternal(data.downloadUrl); return; }
       surveyShowing = true; render();
     }
     var dl = by("dl");
-    if (dl) dl.onclick = startDownload;
+    if (dl) dl.onclick = function(){ startDownload("click_download"); };
     var full = by("full");
-    if (full) full.onclick = function(){ openExternal(data.playUrl); };
+    if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(data.playUrl); };
     var reuse = by("reuse");
-    if (reuse) reuse.onclick = startDownload;
+    if (reuse) reuse.onclick = function(){ startDownload("click_reuse"); };
     var logo = by("logo");
-    if (logo) logo.onclick = function(){ openExternal("https://h5p.org"); };
+    if (logo) logo.onclick = function(){ logClick("click_logo"); openExternal("https://h5p.org"); };
 
     var happyBtns = document.querySelectorAll("[data-sv-happy]");
     for (var hi = 0; hi < happyBtns.length; hi++){

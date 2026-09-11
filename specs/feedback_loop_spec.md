@@ -113,23 +113,26 @@ anything — only the two taps do.
 
 Why `Download .h5p` specifically, and why mandatory: this is a deliberate reversal of the
 original non-blocking design, made explicitly to trade a little friction at the moment of
-highest intent for near-complete response coverage — young product, needs signal fast, and
-an optional prompt was likely to get a thin, self-selected response rate. Two consequences
-worth remembering when reading the resulting data, not reasons to reconsider the choice:
-- **The "Download .h5p click" metric changes meaning.** It now measures "clicked Download
-  *and* was willing to answer," not pure download intent — someone who clicks, sees the
-  question, and closes the chat rather than answer won't register as a download at all.
-- Open in H5P player / h5p.com / Lumi clicks remain the *ungated* export-intent signals —
-  useful as a cross-check against Download's numbers if the mandatory tap ever seems to be
-  suppressing completions.
+highest intent for near-complete survey response coverage — young product, needs signal
+fast, and an optional prompt was likely to get a thin, self-selected response rate.
 
-**Implementation shape, given what already exists:** the Download button's handler
-currently calls `openExternal(data.downloadUrl)` directly on click — change it to first
-render the two-tap question set in place (`keyView()`, almost always the view showing at
-this point) and only call `openExternal` once both taps are recorded. The other two export handlers
-(`full`, and any future h5p.com/Lumi links) are untouched. A session-local flag (same
-pattern as `mode`/`realState`) means a second Download click, after the first is answered,
-goes straight through.
+**Corrected 2026-09-11 — the click and the survey are two separate signals, not one.**
+Earlier text here said the Download click metric "changes meaning" to require survey
+completion — that's wrong and has been reversed: **`click_download` is logged the instant
+the button is clicked, unconditionally**, via `logClick()` in the widget, before the survey
+gate is even checked. Whether the survey ever gets completed is a *second*, independent
+question — answered by whether a `survey_responses` row exists for that token, not by
+whether the click was logged. See "What to measure" below for the exact query shapes this
+enables (unique users, distinct packages downloaded, raw per-button click counts).
+
+**Implementation shape, given what already exists:** the Download button's handler logs
+`click_download` via `POST /api/track` first, unconditionally — then, exactly as before,
+either passes straight through (`surveyDone`) or renders the two-tap question set in place
+and only calls `openExternal` once both taps are recorded. The footer "Reuse" link logs its
+own `click_reuse` (same gating, distinct event type — "count clicks on each button" wants
+them separable even though the underlying action is identical). Every other button (Take
+the quiz, Answer key, Open in H5P player, the H5P logo) logs its own click type the same
+way, fire-and-forget, never blocking the button's actual behavior.
 
 **Build cost is low:** a POST from the widget to a new endpoint, well within the CSP already
 granted (`connect_domains` already covers exactly this pattern — no new sandbox permission
@@ -140,6 +143,53 @@ anonymous-dedup reasons as the h5p.com click tracking.
 on every card risks annoying people and skewing responses toward strong opinions only. Keep
 it easily dismissible from day one; a frequency cap is a reasonable follow-up once real
 response-rate data exists, not something to over-build before then.
+
+## Reach & download metrics — the basic funnel (decided 2026-09-11)
+
+Before the richer activation/satisfaction analysis below, the foundational numbers: how many
+people use this at all, and how many get a package out of it. Verified live against the real
+database, not just reasoned about — the query shapes below produced exactly the expected
+counts against a simulated two-user scenario.
+
+**Terminology, precisely:** one **session** (a ChatGPT conversation) can produce multiple
+**packages** — every refinement is a new `.h5p`, a new content-addressed token, tracked via
+the `generate`/`refinement` events already logged on every `create_h5p_quiz` call. A single
+package can be **downloaded** any number of times. A package may itself contain one or more
+H5P *interactives* (today: one Question Set holding N questions; once MVP 3+ content types
+land, potentially several embedded interactives in one package) — counting stays at the
+**package** level (one row per token), not the sub-interactive level, since that's the
+natural unit everything else in this system already keys on.
+
+- **How many users use the plugin at all:** `count(distinct anon_uid)` across `generate` +
+  `refinement` events — this is why every call now logs a row, not just refinements.
+- **How many users downloaded one or more packages:** `count(distinct anon_uid)` where
+  `event_type = 'click_download'` exists for them.
+- **How many distinct packages got downloaded — never counting the same content twice:**
+  `count(distinct quiz_token)` where `event_type = 'click_download'`. This dedup is free,
+  not extra logic — the token *is* the content (gzip+base64 of the spec), so two downloads
+  of identical content already share one token by construction. Clicking Download five times
+  on the same quiz still counts as **one** package downloaded, not five.
+- **Raw click count per button — never deduped, every click counts:** `count(*) group by
+  event_type` — `click_take_quiz`, `click_answer_key`, `click_download`, `click_open_player`,
+  `click_reuse`, `click_logo`, `click_h5pcom`, `click_lumi`.
+- **Critically: `click_download` is logged the instant the button is clicked, full stop** —
+  independent of whether the mandatory survey that follows ever gets completed. Whether a
+  download was accompanied by a completed survey is a separate join against
+  `survey_responses` by `quiz_token`, not something the click count itself encodes.
+
+```sql
+-- unique plugin users
+select count(distinct anon_uid) from events where event_type in ('generate','refinement');
+
+-- users who downloaded >= 1 package
+select count(distinct anon_uid) from events where event_type = 'click_download';
+
+-- distinct packages downloaded (deduped by content, for free, via the token)
+select count(distinct quiz_token) from events where event_type = 'click_download';
+
+-- raw clicks per button, not deduped
+select event_type, count(*) from events group by event_type order by event_type;
+```
 
 ## What to measure — educator activation + engagement, not click counts
 
