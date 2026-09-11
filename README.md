@@ -3,7 +3,6 @@
 Turn learning content into an interactive **H5P activity** from inside any AI assistant,
 then export a standard `.h5p` file. First activity type: **Question Set** (multiple-choice quiz).
 ChatGPT is the first interface; Claude and other MCP clients connect to the same server.
-Same model as Kahoot, which ships both a ChatGPT App and an MCP server.
 
 This repo is both the Sherpa-B project workspace (`journey.md`, `reports/`, `specs/`) and
 the app itself.
