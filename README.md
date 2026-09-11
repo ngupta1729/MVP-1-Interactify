@@ -38,8 +38,7 @@ the content was drafted, instead of behind a separate destination app.
 
 ## Value for the business
 
-Honestly: **this is the least settled part of the spec, on purpose.** The technical bet
-(can AI reliably generate a valid, portable H5P package?) is proven. The commercial bet is
+Honestly: **this is the least settled part of the spec, on purpose.** The technical bet is proven. The commercial bet is
 not, and shouldn't be assumed — see [Open questions](#open-questions) for why. What's true
 today:
 
@@ -140,12 +139,8 @@ h5p.com or Lumi specifically (structural validity confirmed; that specific round
 - What's the real reason to choose a hosted vendor once AI can generate valid, portable
   files directly? (Candidates: a living/versioned activity, analytics, a credibility
   guarantee, or the capability layer as the product itself — untested.)
-- Does the real-H5P-in-card experience hold up broadly, or does the JS-lookalike fallback
-  show up often enough in practice to undercut the "real activity" promise?
 - When more content types are added, should the assistant recommend a type on its own, or
   should scope stay narrow (one type) until Crawl is validated? (Discussed, not decided.)
-- Git → Vercel continuous deployment is pushed but not yet linked (pending a one-time
-  GitHub App authorization) — CLI-based deploys are the working path until then.
 
 ## System design decisions taken
 
