@@ -533,6 +533,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       if (slot && h5pNode.parentNode !== slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
     }
     wire();
+    notifyHeight();
   }
 
   function openExternal(url){
@@ -544,6 +545,19 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       }
     } catch (e) {}
     window.open(url, "_blank", "noopener");
+  }
+
+  // ChatGPT sizes the card's iframe once and does NOT auto-resize it as our
+  // own content grows (e.g. the real H5P activity mounting, then the survey
+  // appending below it) - without this, later content is silently clipped
+  // outside the frame with no scrollbar, not just off-screen-but-scrollable.
+  // Called after every render() since any render can change content height.
+  function notifyHeight(){
+    try {
+      if (window.openai && typeof window.openai.notifyIntrinsicHeight === "function"){
+        window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+      }
+    } catch (e) {}
   }
 
   function wire(){
@@ -675,6 +689,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     window.addEventListener("openai:set_globals", function(){
       if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
     });
+    // The real H5P runtime mounts and updates its own DOM asynchronously,
+    // outside our render() calls (e.g. finishing its own load, or the learner
+    // clicking its own internal "Check"/"Next") - catch those height changes
+    // too, not just the ones that happen to coincide with our own renders.
+    try {
+      if (typeof ResizeObserver !== "undefined"){
+        new ResizeObserver(function(){ notifyHeight(); }).observe(document.body);
+      }
+    } catch (e) {}
   }
   boot();
 })();
