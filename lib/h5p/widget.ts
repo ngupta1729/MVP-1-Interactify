@@ -230,6 +230,18 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     });
   }
 
+  var warmed = false;
+  // Fetch the (~23 KB, but round-trip-heavy) h5p-standalone runtime as soon as we
+  // have a player URL, well before the user clicks "Take the quiz" - so that first
+  // click only has to wait on the small per-question JSON/library files, not this.
+  function warmRuntime(){
+    if (warmed) return;
+    var origin = assetOrigin();
+    if (!origin) return;
+    warmed = true;
+    loadScriptOnce(origin + "/h5p-standalone/main.bundle.js").catch(function(){});
+  }
+
   // A one-line picture of what actually happened, shown under the fallback note.
   // h5p-standalone's script injector only listens for "load" (never "error"), so a
   // blocked asset makes its promise hang rather than reject - hence the watchdog
@@ -477,6 +489,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 
     var start = by("start");
     if (start) start.onclick = function(){
+      // h5p-standalone's core library sets globals (window.H5P, window.H5PIntegration)
+      // the first time it loads and never fully resets them, so mounting a *second*
+      // fresh instance into a *new* h5pNode is unreliable - it can silently render
+      // nothing and we'd fall back to the lookalike. Once we have one working
+      // instance, reuse it instead of asking h5p-standalone to build another.
+      if (realState === "ok" && h5pNode && h5pNode.querySelector(".h5p-question, .h5p-question-set")){
+        mode = "real"; render();
+        return;
+      }
       failReason = ""; assetErrors = [];
       mode = "real"; realState = "loading";
       mountReal();
@@ -524,6 +545,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     data = o || {};
     if (picks.length !== qlist().length) resetRun();
     render();
+    warmRuntime();
   }
 
   function boot(){
