@@ -79,20 +79,35 @@ Four sources feed the loop by now; when they disagree, trust in this order:
 Goal: direct signal on whether the educator had a good experience, and what they'd improve —
 correcting for everything else in this spec being inferred or self-summarized.
 
-**Design — two-step, non-blocking, skippable at every step:**
-- **Step 1** (always visible, tiny footprint): a one-tap reaction — 😊 / 😐 / 😞. Lower
-  friction than a star rating or NPS scale, enough resolution to be useful.
-- **Step 2** (appears only after Step 1, itself skippable): a few quick-tap improvement
-  chips ("Too easy," "Too hard," "Wrong content type," "Wording/clarity," "Something else")
-  plus an optional free-text box, with clear Submit/Skip actions. Chips drive response rate;
-  free text lets people say more when they want to.
+**Design — decided 2026-09-11: one question, one screen, nothing gated behind a first tap.**
 
-**Where, concretely — grounded in the actual widget code, not every view:** the "at rest,
-reviewing" moments only — `keyView()` (the default, most-seen view) and `resultsView()`
-(after finishing a preview). **Not** the actively-interactive views (mid-quiz) — those
-re-render on every click, so anything placed there would nag constantly, not just appear
-once. A simple session-local flag (same pattern as the existing `mode`/`realState` widget
-state) stops it reappearing once answered or dismissed.
+> **"Would you use this quiz as-is?"**
+> 👍 Yes, as-is · 🤏 Yes, with a few tweaks · 👎 No, I'd rewrite it
+> *(always-visible, optional line beneath, never gated):* "Anything specific you'd change?"
+
+The 3-way tap alone gives a satisfaction signal; the always-present but fully optional text
+line is what catches "what would you improve," for whoever bothers to type. One ask, not a
+progressive two-step flow.
+
+**Moment — decided 2026-09-11: fires off export intent, not generation or mid-review.**
+Triggered by whichever comes first — Download `.h5p`, Open in H5P player, or an
+h5p.com/Lumi import click. Reasoning:
+- **Peak-informed sentiment.** They've reviewed the content and made a real decision to act
+  on it — far more informed than asking right after generation, before they've looked at
+  anything.
+- **Never blocks the action itself.** The export click fires immediately, as normal; the
+  survey appears alongside it afterward, never as a gate in front of it.
+- **Complements the abandonment proxy instead of duplicating it.** Educators who generate a
+  quiz and never export are already captured — negatively — by the abandonment signal.
+  This survey only needs the did-export population, which is also the best-informed one.
+  Asking earlier risks catching people before they've decided anything.
+
+**Implementation shape, given what already exists:** the export buttons already call
+`openExternal(...)`; add a flag alongside that (`exportedOnce = true`, re-render) so
+whichever view is currently showing — almost always `keyView()`, the default view people are
+on when they decide to export — appends the prompt beneath its existing content. No new view
+state needed. A session-local flag (same pattern as `mode`/`realState`) stops it reappearing
+once answered or dismissed, even across multiple export clicks in a row.
 
 **Build cost is low:** a POST from the widget to a new endpoint, well within the CSP already
 granted (`connect_domains` already covers exactly this pattern — no new sandbox permission
