@@ -11,6 +11,8 @@
     "h5p:smoke": "node scripts/smoke-build-h5p.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
     "h5p-standalone": "^3.8.2",
     "jszip": "^3.10.1",
     "mcp-handler": "^1.0.1",
@@ -23,6 +25,8 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "^5.7.0"
   }

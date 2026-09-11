@@ -53,6 +53,24 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     word-break: break-all;
   }
 
+  .survey {
+    margin-top: 14px; padding: 12px 14px; border-radius: 6px;
+    background: #f4f7fb; border: 1px solid #dde6f0;
+  }
+  .survey-q { font-size: .88em; font-weight: 600; margin: 8px 0 6px; }
+  .survey-q:first-child { margin-top: 0; }
+  .survey-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .chip {
+    font: inherit; font-size: .82em; cursor: pointer; border: 1px solid #c7d2de;
+    background: #fff; color: var(--ink); border-radius: 999px; padding: 5px 12px;
+  }
+  .chip:hover { background: #eef3f9; }
+  .chip.sel { background: var(--sel-bg); border-color: var(--sel-bd); color: var(--sel-tx); }
+  .survey-text {
+    font: inherit; font-size: .85em; width: 100%; box-sizing: border-box;
+    margin: 6px 0 10px; padding: 7px 10px; border: 1px solid #c7d2de; border-radius: 4px;
+  }
+
   #h5proot-slot { margin-top: 6px; }
   /* keep the real H5P activity on a white ground inside the card */
   #h5proot-slot .h5p-content, #h5proot-slot .h5p-container { background: #fff; }
@@ -169,6 +187,12 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   var assetErrors = [];    // src/href of any <script>/<link> that failed to load
   var h5pNode = null;      // the live element h5p-standalone renders into (kept across re-renders)
   var qi = 0, picks = [], checked = [], finished = false;
+
+  // Mandatory pre-download survey (specs/feedback_loop_spec.md, "Embedded
+  // satisfaction survey"). Gates Download .h5p only - Open in H5P player and
+  // any h5p.com/Lumi links are untouched. Two taps required; text optional.
+  var surveyDone = false, surveyShowing = false, surveySubmitting = false;
+  var surveyHappiness = null, surveyDestination = null;
 
   function qlist(){ return (data && data.questions) || []; }
   function stemOf(q){ return q.stem || q.question || ""; }
@@ -352,7 +376,41 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="foot">' +
         '<button class="btn" id="start">\\u25b6 Take the quiz</button>' +
         actionBtns() +
-      '</div>';
+      '</div>' +
+      (surveyShowing ? surveyPrompt() : "");
+  }
+
+  // ---------- pre-download survey ----------
+  // Not about this quiz's content quality (that's refinementNote + the diff
+  // classifier's job) - happiness, intended destination, and what would make
+  // the experience better. Two taps required; text stays optional.
+  var HAPPINESS_OPTS = [["happy", "\\ud83d\\ude0a", "Happy"], ["okay", "\\ud83d\\ude10", "It's okay"], ["not_happy", "\\ud83d\\ude1e", "Not happy"]];
+  var DEST_OPTS = [
+    ["lms", "\\ud83c\\udfeb My LMS"], ["own_site", "\\ud83c\\udf10 My own site"],
+    ["shared_direct", "\\ud83d\\udd17 Shared directly"], ["not_sure", "\\ud83e\\udd14 Not sure yet"], ["other", "Other"]
+  ];
+
+  function surveyPrompt(){
+    var happyChips = HAPPINESS_OPTS.map(function(o){
+      var sel = surveyHappiness === o[0] ? " sel" : "";
+      return '<button class="chip' + sel + '" data-sv-happy="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>';
+    }).join("");
+    var destChips = DEST_OPTS.map(function(o){
+      var sel = surveyDestination === o[0] ? " sel" : "";
+      return '<button class="chip' + sel + '" data-sv-dest="' + o[0] + '">' + o[1] + '</button>';
+    }).join("");
+    var ready = !!(surveyHappiness && surveyDestination);
+
+    return '<div class="survey">' +
+      '<div class="survey-q">Before you download \\u2014 how happy are you with this quiz?</div>' +
+      '<div class="survey-row">' + happyChips + '</div>' +
+      '<div class="survey-q">Where will you use it?</div>' +
+      '<div class="survey-row">' + destChips + '</div>' +
+      '<input class="survey-text" id="sv-text" maxlength="1000" placeholder="Anything specific you\\u2019d change? (optional)" />' +
+      '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>' +
+        (surveySubmitting ? "Saving\\u2026" : "Continue to download") +
+      '</button>' +
+    '</div>';
   }
 
   // ---------- JS fallback runner (H5P-styled) ----------
@@ -518,14 +576,56 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var retry = by("retry");
     if (retry) retry.onclick = function(){ resetRun(); render(); };
 
+    // Download is gated by the mandatory survey; the footer "Reuse" link is
+    // the same action under a different label, so it's gated the same way -
+    // otherwise it's a one-click bypass sitting right next to the real gate.
+    function startDownload(){
+      if (surveyDone){ openExternal(data.downloadUrl); return; }
+      surveyShowing = true; render();
+    }
     var dl = by("dl");
-    if (dl) dl.onclick = function(){ openExternal(data.downloadUrl); };
+    if (dl) dl.onclick = startDownload;
     var full = by("full");
     if (full) full.onclick = function(){ openExternal(data.playUrl); };
     var reuse = by("reuse");
-    if (reuse) reuse.onclick = function(){ openExternal(data.downloadUrl); };
+    if (reuse) reuse.onclick = startDownload;
     var logo = by("logo");
     if (logo) logo.onclick = function(){ openExternal("https://h5p.org"); };
+
+    var happyBtns = document.querySelectorAll("[data-sv-happy]");
+    for (var hi = 0; hi < happyBtns.length; hi++){
+      happyBtns[hi].onclick = function(){
+        surveyHappiness = this.getAttribute("data-sv-happy"); render();
+      };
+    }
+    var destBtns = document.querySelectorAll("[data-sv-dest]");
+    for (var di = 0; di < destBtns.length; di++){
+      destBtns[di].onclick = function(){
+        surveyDestination = this.getAttribute("data-sv-dest"); render();
+      };
+    }
+    var svContinue = by("sv-continue");
+    if (svContinue) svContinue.onclick = function(){
+      if (!(surveyHappiness && surveyDestination) || surveySubmitting) return;
+      surveySubmitting = true; render();
+      var textEl = by("sv-text");
+      var body = {
+        anonUid: data.anonUid || null,
+        happiness: surveyHappiness,
+        destination: surveyDestination,
+        improvementText: (textEl && textEl.value) ? textEl.value.slice(0, 1000) : undefined,
+      };
+      var finish = function(){
+        surveyDone = true; surveyShowing = false; surveySubmitting = false;
+        openExternal(data.downloadUrl);
+        render();
+      };
+      fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(finish).catch(finish); // never let a network hiccup block the download
+    };
 
     if (mode === "js" && !finished && !checked[qi]){
       var lis = document.querySelectorAll("li.answer");

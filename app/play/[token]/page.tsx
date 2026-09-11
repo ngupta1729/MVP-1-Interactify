@@ -63,8 +63,10 @@ export default async function PlayPage({
       <div className="row">
         <a className="dl" href={`/api/h5p/${token}`}>Download .h5p</a>
         <span className="muted">
-          Import into <a href="https://h5p.com" target="_blank" rel="noopener">h5p.com</a> or{" "}
-          <a href="https://lumi.education" target="_blank" rel="noopener">Lumi</a>.
+          Import into{" "}
+          <a href={`/api/track?token=${token}&target=h5pcom`} target="_blank" rel="noopener">h5p.com</a>{" "}
+          or{" "}
+          <a href={`/api/track?token=${token}&target=lumi`} target="_blank" rel="noopener">Lumi</a>.
         </span>
       </div>
     </div>
