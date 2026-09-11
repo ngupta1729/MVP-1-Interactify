@@ -79,35 +79,42 @@ Four sources feed the loop by now; when they disagree, trust in this order:
 Goal: direct signal on whether the educator had a good experience, and what they'd improve —
 correcting for everything else in this spec being inferred or self-summarized.
 
-**Design — decided 2026-09-11: one question, one screen, nothing gated behind a first tap.**
+**Design — decided 2026-09-11: one question, one screen.**
 
 > **"Would you use this quiz as-is?"**
 > 👍 Yes, as-is · 🤏 Yes, with a few tweaks · 👎 No, I'd rewrite it
-> *(always-visible, optional line beneath, never gated):* "Anything specific you'd change?"
+> *(always-visible line beneath, optional — the tap is what's required):* "Anything
+> specific you'd change?"
 
-The 3-way tap alone gives a satisfaction signal; the always-present but fully optional text
-line is what catches "what would you improve," for whoever bothers to type. One ask, not a
-progressive two-step flow.
+The 3-way tap gives the satisfaction signal and is the mandatory part (below); the free-text
+line is where "what would you improve" gets caught, for whoever bothers to type — never
+forced, even though the tap is.
 
-**Moment — decided 2026-09-11: fires off export intent, not generation or mid-review.**
-Triggered by whichever comes first — Download `.h5p`, Open in H5P player, or an
-h5p.com/Lumi import click. Reasoning:
-- **Peak-informed sentiment.** They've reviewed the content and made a real decision to act
-  on it — far more informed than asking right after generation, before they've looked at
-  anything.
-- **Never blocks the action itself.** The export click fires immediately, as normal; the
-  survey appears alongside it afterward, never as a gate in front of it.
-- **Complements the abandonment proxy instead of duplicating it.** Educators who generate a
-  quiz and never export are already captured — negatively — by the abandonment signal.
-  This survey only needs the did-export population, which is also the best-informed one.
-  Asking earlier risks catching people before they've decided anything.
+**Moment — revised 2026-09-11: `Download .h5p` only, mandatory, blocking the download.**
+Narrower and stricter than the original design: only the `Download .h5p` button is gated —
+**Open in H5P player and the h5p.com/Lumi import links are unaffected**, exactly as before.
+Clicking Download shows the one-tap question first; the file doesn't open until one of the
+three options is tapped. The optional text line never blocks anything — only the tap does.
 
-**Implementation shape, given what already exists:** the export buttons already call
-`openExternal(...)`; add a flag alongside that (`exportedOnce = true`, re-render) so
-whichever view is currently showing — almost always `keyView()`, the default view people are
-on when they decide to export — appends the prompt beneath its existing content. No new view
-state needed. A session-local flag (same pattern as `mode`/`realState`) stops it reappearing
-once answered or dismissed, even across multiple export clicks in a row.
+Why `Download .h5p` specifically, and why mandatory: this is a deliberate reversal of the
+original non-blocking design, made explicitly to trade a little friction at the moment of
+highest intent for near-complete response coverage — young product, needs signal fast, and
+an optional prompt was likely to get a thin, self-selected response rate. Two consequences
+worth remembering when reading the resulting data, not reasons to reconsider the choice:
+- **The "Download .h5p click" metric changes meaning.** It now measures "clicked Download
+  *and* was willing to answer," not pure download intent — someone who clicks, sees the
+  question, and closes the chat rather than answer won't register as a download at all.
+- Open in H5P player / h5p.com / Lumi clicks remain the *ungated* export-intent signals —
+  useful as a cross-check against Download's numbers if the mandatory tap ever seems to be
+  suppressing completions.
+
+**Implementation shape, given what already exists:** the Download button's handler
+currently calls `openExternal(data.downloadUrl)` directly on click — change it to first
+render the one-tap question in place (`keyView()`, almost always the view showing at this
+point) and only call `openExternal` once a tap is recorded. The other two export handlers
+(`full`, and any future h5p.com/Lumi links) are untouched. A session-local flag (same
+pattern as `mode`/`realState`) means a second Download click, after the first is answered,
+goes straight through.
 
 **Build cost is low:** a POST from the widget to a new endpoint, well within the CSP already
 granted (`connect_domains` already covers exactly this pattern — no new sandbox permission
@@ -151,6 +158,32 @@ abandonment.** Generated, then never previewed, never downloaded, never clicked 
 h5p.com — the conversation just stops. That's the closest thing to an implicit "wasn't good
 enough to use" we can observe. Pair *low refinement + strong export intent* (good) against
 *generated-then-abandoned* (bad) as the practical proxy feeding the loop below.
+
+**Why they abandoned — partially inferable, not fully solvable, worth naming honestly.**
+There's no UI moment to hook a question onto for someone who simply disengages (no download,
+no preview, no refinement — nothing to gate a prompt behind), and no exit-intent signal
+exists in a chat widget the way it might on a webpage. The mandatory survey (below) only
+reaches the *did-download* population by construction — it structurally cannot reach
+abandoners. Three partial mitigations, none a full fix:
+1. **Segment abandonment against signals already logged**, instead of treating it as one
+   bucket: 3+ refinements then still abandoned ⇒ content quality is the likely blocker;
+   zero refinements and zero preview ⇒ ambiguous (bad output vs. unrelated reason to leave —
+   genuinely indistinguishable from behavior alone, treat as noise, not a false signal);
+   previewed then abandoned without downloading ⇒ they engaged with real content and it
+   still didn't clear the bar, a stronger negative than never previewing; fell back to the
+   lookalike runner right before leaving ⇒ a plausible *operational*, not content, cause.
+2. **A conversational check-in via the tool's response text** (same lever as the fast loop,
+   not a UI mechanism) — e.g. "if the user seems to be moving on without downloading or
+   refining, you may ask once whether it met their needs." Advisory only; ChatGPT decides
+   whether to actually say it.
+3. **A retrospective ask on their next visit**, if they return at all — the next tool call's
+   response can note the prior quiz was never downloaded and ask what didn't work. Only
+   reaches people who come back; doesn't touch one-and-done abandoners.
+
+**What stays genuinely unsolved:** explicit reasons from someone who leaves after one look
+and never returns. A standard, well-known limit in product analytics generally — the
+population most worth hearing from is structurally the hardest to reach — not something
+specific to this design, and not worth over-engineering around.
 
 **Operational (delivery quality, not content quality):** real-H5P vs. fallback rate — also
 finally answers the open README question on how often the fallback shows up in practice.
