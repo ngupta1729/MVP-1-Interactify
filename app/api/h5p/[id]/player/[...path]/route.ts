@@ -40,7 +40,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; pa
     headers: {
       "Content-Type": MIME[ext] ?? "application/octet-stream",
       "Content-Length": String(data.length),
-      "Cache-Control": "no-store",
+      // The id *is* the content (gzipped spec), so every file under it is immutable.
+      "Cache-Control": "public, max-age=31536000, immutable",
       "Access-Control-Allow-Origin": "*",
     },
   });

@@ -46,10 +46,16 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .fallback-note { color: var(--muted); font-size: .78em; margin: 10px 0 0; }
+  .fallback-note summary { cursor: pointer; }
+  .fallback-note .why {
+    margin-top: 5px; padding: 6px 8px; border-radius: 4px;
+    background: #f4f4f4; color: #555; font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    word-break: break-all;
+  }
 
-  #h5proot { margin-top: 6px; }
+  #h5proot-slot { margin-top: 6px; }
   /* keep the real H5P activity on a white ground inside the card */
-  #h5proot .h5p-content, #h5proot .h5p-container { background: #fff; }
+  #h5proot-slot .h5p-content, #h5proot-slot .h5p-container { background: #fff; }
 
   .dots { text-align: center; padding: 6px 0 2px; line-height: 2em; }
   .dot {
@@ -159,6 +165,8 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // "js"   = self-contained JS fallback runner
   var mode = "key";
   var realState = "idle";  // idle | loading | ok | failed
+  var failReason = "";     // why the real runtime did not come up (shown in the card)
+  var assetErrors = [];    // src/href of any <script>/<link> that failed to load
   var h5pNode = null;      // the live element h5p-standalone renders into (kept across re-renders)
   var qi = 0, picks = [], checked = [], finished = false;
 
@@ -222,20 +230,50 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     });
   }
 
+  // A one-line picture of what actually happened, shown under the fallback note.
+  // h5p-standalone's script injector only listens for "load" (never "error"), so a
+  // blocked asset makes its promise hang rather than reject - hence the watchdog
+  // plus the capture-phase asset-error listener installed in boot().
+  function diag(){
+    var d = [];
+    if (assetErrors.length){
+      d.push(assetErrors.length + " asset(s) failed to load: " + assetErrors.slice(-3).join(" , "));
+    }
+    d.push("H5PStandalone=" + (window.H5PStandalone ? "yes" : "no"));
+    d.push("H5P.QuestionSet=" + (window.H5P && window.H5P.QuestionSet ? "yes" : "no"));
+    if (h5pNode){
+      d.push("attached=" + (document.body && document.body.contains(h5pNode) ? "yes" : "no") +
+        " .h5p-content=" + h5pNode.querySelectorAll(".h5p-content").length +
+        " .h5p-question=" + h5pNode.querySelectorAll(".h5p-question").length);
+    }
+    return d.join(" | ");
+  }
+
   function mountReal(){
     var origin = assetOrigin(), base = playerBase();
-    if (!origin || !base){ return failReal(); }
+    if (!origin || !base){ return failReal("no player URL in the tool output"); }
 
     var settled = false;
     var watchdog = setTimeout(function(){
-      if (!settled){ settled = true; failReal(); }
-    }, 12000);
+      if (!settled){ settled = true; failReal("timed out after 25s"); }
+    }, 25000);
 
+    // The mount point has to be IN the page before H5P starts: h5p-standalone
+    // finishes by calling H5P.init(), which only picks up .h5p-content elements
+    // attached to the document. Mounting a detached div renders nothing.
     h5pNode = document.createElement("div");
+    render();
+    if (!(document.body && document.body.contains(h5pNode))){
+      settled = true; clearTimeout(watchdog);
+      return failReal("could not attach the mount point");
+    }
 
     loadScriptOnce(origin + "/h5p-standalone/main.bundle.js")
       .then(function(){
         if (settled) return;
+        if (!(window.H5PStandalone && window.H5PStandalone.H5P)){
+          throw new Error("h5p-standalone loaded but did not define H5PStandalone");
+        }
         return new window.H5PStandalone.H5P(h5pNode, {
           h5pJsonPath: base,
           frameJs: origin + "/h5p-standalone/frame.bundle.js",
@@ -246,29 +284,38 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       .then(function(){
         if (settled) return;
         settled = true; clearTimeout(watchdog);
-        // bail if H5P produced nothing usable
-        if (!h5pNode.querySelector(".h5p-content, .h5p-question")) return failReal();
-        realState = "ok"; mode = "real"; render();
+        // H5P.init() attaches the question set asynchronously - give it a beat,
+        // then insist on a real rendered question, not just the empty wrapper.
+        setTimeout(function(){
+          if (h5pNode.querySelector(".h5p-question, .h5p-question-set, .h5p-joubelui-button")){
+            realState = "ok"; mode = "real"; render();
+          } else {
+            failReal("runtime loaded but rendered no question");
+          }
+        }, 700);
       })
-      .catch(function(){
+      .catch(function(err){
         if (settled) return;
         settled = true; clearTimeout(watchdog);
-        failReal();
+        failReal((err && err.message) || String(err));
       });
   }
 
-  function failReal(){
+  function failReal(reason){
+    failReason = (reason || "unknown") + " - " + diag();
     realState = "failed";
     mode = "js"; resetRun();
     render();
   }
 
   function realView(){
-    if (realState === "loading"){
-      return '<div class="loading"><span class="spinner"></span>Loading the H5P activity&hellip;</div>';
-    }
-    // realState === "ok": #h5proot-slot gets the live h5pNode re-attached after innerHTML.
-    return '<div id="h5proot-slot"></div>' +
+    // The slot is present while loading too - h5pNode has to live in the document
+    // from the moment H5P mounts into it (see mountReal).
+    var busy = realState === "loading"
+      ? '<div class="loading"><span class="spinner"></span>Loading the H5P activity&hellip;</div>'
+      : '';
+    return busy +
+      '<div id="h5proot-slot"></div>' +
       '<div class="foot">' +
         '<button class="btn sec" id="key">Answer key</button>' +
         actionBtns() +
@@ -337,7 +384,10 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     }
 
     var note = realState === "failed"
-      ? '<div class="fallback-note">Showing a lightweight version \\u2014 open the full H5P activity below.</div>'
+      ? '<details class="fallback-note">' +
+          '<summary>Showing a lightweight version \\u2014 open the full H5P activity below.</summary>' +
+          '<div class="why">' + esc(failReason) + '</div>' +
+        '</details>'
       : '';
 
     return '<div class="dots">' + dots + '</div>' +
@@ -404,9 +454,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       body +
       footerBar();
 
-    if (mode === "real" && realState === "ok" && h5pNode){
+    if (mode === "real" && h5pNode){
       var slot = document.getElementById("h5proot-slot");
-      if (slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
+      if (slot && h5pNode.parentNode !== slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
     }
     wire();
   }
@@ -427,7 +477,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 
     var start = by("start");
     if (start) start.onclick = function(){
-      mode = "real"; realState = "loading"; render(); mountReal();
+      failReason = ""; assetErrors = [];
+      mode = "real"; realState = "loading";
+      mountReal();
     };
 
     var key = by("key");
@@ -475,6 +527,14 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
 
   function boot(){
+    // Capture phase: resource errors on <script>/<link> do not bubble, and
+    // h5p-standalone never wires an onerror of its own.
+    window.addEventListener("error", function(e){
+      var t = e && e.target;
+      if (t && (t.tagName === "SCRIPT" || t.tagName === "LINK")){
+        assetErrors.push(String(t.src || t.href || "?"));
+      }
+    }, true);
     if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
     window.addEventListener("openai:set_globals", function(){
       if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
