@@ -376,8 +376,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="foot">' +
         '<button class="btn" id="start">\\u25b6 Take the quiz</button>' +
         actionBtns() +
-      '</div>' +
-      (surveyShowing ? surveyPrompt() : "");
+      '</div>';
   }
 
   // ---------- pre-download survey ----------
@@ -522,6 +521,11 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="meta">' + count + ' question' + (count === 1 ? "" : "s") +
         ' \\u00b7 H5P Question Set \\u00b7 pass mark ' + ((data.passPercentage) || 60) + '%</div>' +
       body +
+      // Centralized here (not per-view) so it shows immediately regardless of
+      // which view Download was clicked from - realView/resultsView/keyView
+      // all reach the download button via actionBtns(); jsView mid-quiz never
+      // renders that button at all, so this never fires there.
+      (surveyShowing ? surveyPrompt() : "") +
       footerBar();
 
     if (mode === "real" && h5pNode){
