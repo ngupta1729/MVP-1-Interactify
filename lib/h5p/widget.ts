@@ -238,17 +238,20 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       'fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.2" stroke-linejoin="round"/></svg>';
   }
 
+  // ---------- quiz URLs ----------
+  // Built client-side from token + appOrigin rather than handed pre-built
+  // playUrl/downloadUrl strings - the model sees structuredContent verbatim
+  // (confirmed against OpenAI's own Apps SDK docs), and a ready-made "play
+  // this quiz" URL sitting there is exactly what it was spontaneously
+  // linking as "Play it here" in its reply, regardless of any instruction
+  // we wrote. A bare origin gives it nothing shareable to copy.
+  function quizPlayUrl(){ return (data.appOrigin || "") + "/play/" + (data.token || ""); }
+  function quizDownloadUrl(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || ""); }
+  function quizPlayerUrl(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || "") + "/player"; }
+
   // ---------- real H5P runtime ----------
-  function assetOrigin(){
-    try { return new URL(data.playerUrl || data.playUrl).origin; } catch (e) { return ""; }
-  }
-  function playerBase(){
-    if (data.playerUrl) return data.playerUrl;
-    try {
-      var u = new URL(data.playUrl);
-      return u.origin + u.pathname.replace(/^\\/play\\//, "/api/h5p/") + "/player";
-    } catch (e) { return ""; }
-  }
+  function assetOrigin(){ return data.appOrigin || ""; }
+  function playerBase(){ return quizPlayerUrl(); }
 
   function loadScriptOnce(src){
     return new Promise(function(res, rej){
@@ -506,7 +509,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 
   function actionBtns(){
     var h = "";
-    if (data && data.downloadUrl) h += '<button class="btn sec" id="dl">Download .h5p</button>';
+    if (data && data.token) h += '<button class="btn sec" id="dl">Download .h5p</button>';
     // The h5p.com hook lives in the reply text now (see the tool handler in
     // app/api/[transport]/route.ts), not as a card button - moved there
     // rather than duplicated in both places.
@@ -518,7 +521,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // falls back to the JS lookalike, and it's still how the /play/<token>
     // page is reached at all by non-widget MCP clients (Claude Desktop,
     // MCP Inspector) - that route itself is untouched, only this button.
-    // if (data && data.playUrl) h += '<button class="btn sec" id="full">Open in H5P player \\u2197</button>';
+    // if (data && data.token) h += '<button class="btn sec" id="full">Open in H5P player \\u2197</button>';
     return h;
   }
 
@@ -680,7 +683,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // answered by whether a survey_responses row exists for this token.
     function startDownload(logType){
       logClick(logType);
-      if (surveyDone){ openExternal(data.downloadUrl); return; }
+      if (surveyDone){ openExternal(quizDownloadUrl()); return; }
       surveyShowing = true; render();
     }
     var dl = by("dl");
@@ -695,7 +698,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // rather than deleted, so restoring the buttons and their handlers stays
     // a single, obvious revert.
     // var full = by("full");
-    // if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(data.playUrl); };
+    // if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(quizPlayUrl()); };
     // var reuse = by("reuse");
     // if (reuse) reuse.onclick = function(){ startDownload("click_reuse"); };
     // var logo = by("logo");
@@ -729,7 +732,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       clearTimeout(surveyTextTimer);
       submitSurvey(); // covers any text typed in the last 800ms, unflushed
       surveyDone = true; surveyShowing = false;
-      openExternal(data.downloadUrl);
+      openExternal(quizDownloadUrl());
       render();
     };
 
@@ -748,15 +751,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
 
   function setData(o){
-    // playerUrl is derived from the quiz's content token, so it changes any
-    // time the spec does (a refinement) and stays the same for a no-op
-    // update. If it changed and we have a mounted real-H5P instance, that
-    // instance is for the *old* quiz - drop it rather than let the "reuse
-    // instead of remount" optimization silently keep showing stale content.
-    var prevPlayerUrl = data && data.playerUrl;
+    // token IS the content (see lib/h5p/pack.ts) - it changes any time the
+    // spec does (a refinement) and stays the same for a no-op update. If it
+    // changed and we have a mounted real-H5P instance, that instance is for
+    // the *old* quiz - drop it rather than let the "reuse instead of
+    // remount" optimization silently keep showing stale content.
+    var prevToken = data && data.token;
     data = o || {};
     if (picks.length !== qlist().length) resetRun();
-    if (data.playerUrl !== prevPlayerUrl){
+    if (data.token !== prevToken){
       // Survey/download gating is scoped to content, not to the widget's
       // session - a refinement produces a new token (a new quiz), which
       // hasn't been surveyed yet even if an earlier version already was.
@@ -766,7 +769,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       surveyDone = false; surveyShowing = false;
       surveyHappiness = null; surveyDestination = null; surveyImprovementText = "";
     }
-    if (h5pNode && data.playerUrl !== prevPlayerUrl){
+    if (h5pNode && data.token !== prevToken){
       h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
       if (mode === "real") mode = "key";
     }

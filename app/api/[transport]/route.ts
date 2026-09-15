@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v21.html";
+const WIDGET_URI = "ui://widget/quiz-v22.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -38,6 +38,7 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v18.html",
   "ui://widget/quiz-v19.html",
   "ui://widget/quiz-v20.html",
+  "ui://widget/quiz-v21.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
@@ -189,14 +190,20 @@ const handler = createMcpHandler(
           console.error("create_h5p_quiz: failed to log usage", err);
         }
 
+        // No playUrl/downloadUrl/playerUrl here - structuredContent is what
+        // the model reads verbatim (confirmed against OpenAI's own Apps SDK
+        // docs: "the model reads them verbatim"), and a ready-made "play
+        // this quiz" URL was exactly what it kept spontaneously turning into
+        // a "Play it here" line in its reply, regardless of any instruction.
+        // The widget derives all three from token + appOrigin instead (see
+        // quizPlayUrl()/quizDownloadUrl()/quizPlayerUrl() in widget.ts) -
+        // appOrigin alone gives the model nothing readymade to link.
         const structured = {
           title: spec.title,
           questionCount: spec.questions.length,
           passPercentage: spec.passPercentage,
           token,
-          downloadUrl,
-          playUrl,
-          playerUrl: `${base}/api/h5p/${token}/player`,
+          appOrigin: base,
           filename: built.filename,
           anonUid,
           questions: spec.questions.map((q) => ({
