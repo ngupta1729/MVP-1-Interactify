@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v22.html";
+const WIDGET_URI = "ui://widget/quiz-v23.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -39,6 +39,7 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v19.html",
   "ui://widget/quiz-v20.html",
   "ui://widget/quiz-v21.html",
+  "ui://widget/quiz-v22.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 

@@ -170,6 +170,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   .h5pbar .h5pcom { color: #555; cursor: pointer; }
   .h5pbar .h5pcom:hover { color: #1a73d9; }
   .h5pbar .h5pcom b { color: var(--blue); font-weight: 700; }
+  .h5pbar .ver { color: #bbb; flex: none; margin-left: 10px; }
 </style>
 </head>
 <body>
@@ -179,6 +180,11 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
+
+  // Bump alongside WIDGET_URI in app/api/[transport]/route.ts, same number.
+  // Shown small in the footer so a stale-vs-current card is provable from a
+  // screenshot alone, instead of guessing at client-side caching every time.
+  var WIDGET_VERSION = "v23";
 
   var data = null;
   // "key"  = answer-key review view (default)
@@ -540,6 +546,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     return '<div class="h5pbar">' +
       '<span class="h5pcom" id="h5pcom">Want folders, collaboration, or analytics? ' +
         '<b>Open in h5p.com \\u2197</b></span>' +
+      '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
     '</div>';
     // return '<div class="h5pbar">' +
     //   '<span class="reuse" id="reuse">\\u21ba Reuse</span>' +
