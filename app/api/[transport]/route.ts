@@ -236,9 +236,16 @@ const handler = createMcpHandler(
         // /api/track redirect as before (logs click_h5pcom, tags the
         // destination with utm_source=interactify), just linked from here now.
         const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
+        // Leads with why, not just where: the reasons to go there are
+        // managing it (folders, collaboration) and usage analytics - not
+        // hosting-for-free, which h5p.com's own pricing doesn't actually
+        // offer past a 14-day trial. Points at the plain h5p.com homepage
+        // (not straight to login) so the visitor picks sign-in vs sign-up
+        // themselves - we can't tell which one applies to them.
+        const h5pcomLine = `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
         const text = anonUid
-          ? `${summary}\nOpen in h5p.com: ${h5pcomUrl}`
-          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\nOpen in h5p.com: ${h5pcomUrl}`;
+          ? `${summary}\n${h5pcomLine}`
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n${h5pcomLine}`;
 
         return {
           content: [
