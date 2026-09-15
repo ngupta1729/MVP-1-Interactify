@@ -5,6 +5,25 @@ import { events } from "@/lib/db/schema";
 export const runtime = "nodejs";
 
 /**
+ * The POST handler below is called via fetch() from inside the widget, which
+ * runs on a different origin than this app (ChatGPT's sandbox) - that makes
+ * it a cross-origin request, and since it sends Content-Type: application/json
+ * the browser preflights it with OPTIONS before ever sending the real POST.
+ * Without these headers, the preflight fails and the POST is never sent at
+ * all - silently, with no error the widget's fire-and-forget fetch() would
+ * ever see. Mirrors the player route's existing Access-Control-Allow-Origin.
+ */
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+/**
  * Click-tracking redirect for the h5p.com / Lumi import links (see
  * "Lead-generation signal for h5p.com" in specs/feedback_loop_spec.md).
  * GET /api/track?token=<quiz token>&target=h5pcom|lumi&uid=<anonUid, optional>
@@ -73,12 +92,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return Response.json({ ok: false }, { status: 400 });
+    return Response.json({ ok: false }, { status: 400, headers: CORS_HEADERS });
   }
   const token = typeof body.token === "string" ? body.token : "";
   const eventType = typeof body.eventType === "string" ? body.eventType : "";
   if (!token || !CLICK_EVENT_TYPES.has(eventType)) {
-    return Response.json({ ok: false }, { status: 400 });
+    return Response.json({ ok: false }, { status: 400, headers: CORS_HEADERS });
   }
 
   try {
@@ -90,5 +109,5 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("track/click: failed to log", err);
   }
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: CORS_HEADERS });
 }
