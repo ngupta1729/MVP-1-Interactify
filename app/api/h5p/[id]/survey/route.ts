@@ -22,11 +22,13 @@ export async function OPTIONS() {
 }
 
 /**
- * POST /api/h5p/{token}/survey — the mandatory two-tap survey that gates
- * Download .h5p (see "Embedded satisfaction survey" in
- * specs/feedback_loop_spec.md). A row here *is* the record of the download -
- * there's no separate "download" event, since Download only fires after this
- * succeeds.
+ * POST /api/h5p/{token}/survey — the satisfaction survey (see "Embedded
+ * satisfaction survey" in specs/feedback_loop_spec.md). Upserted, not just
+ * inserted: the widget calls this the moment both required fields are set,
+ * and again on any later change, so this fires many times over one card's
+ * life. Keyed by (quizToken, anonUid) - see lib/db/schema.ts for why - so
+ * every call after the first just updates that same row to the latest
+ * answer, rather than accumulating duplicates.
  *
  * Deliberately NOT about content quality: happiness (holistic), destination
  * (where the educator intends to use it — direct market signal for MVP 3+
@@ -50,16 +52,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 
   try {
-    await getDb().insert(surveyResponses).values({
-      quizToken: id,
-      anonUid: body.anonUid || null,
-      happiness: body.happiness,
-      destination: body.destination,
-      improvementText: body.improvementText || null,
-    });
+    await getDb()
+      .insert(surveyResponses)
+      .values({
+        quizToken: id,
+        anonUid: body.anonUid || null,
+        happiness: body.happiness,
+        destination: body.destination,
+        improvementText: body.improvementText || null,
+      })
+      .onConflictDoUpdate({
+        target: [surveyResponses.quizToken, surveyResponses.anonUid],
+        set: {
+          happiness: body.happiness,
+          destination: body.destination,
+          improvementText: body.improvementText || null,
+          updatedAt: new Date(),
+        },
+      });
   } catch (err) {
-    // A DB hiccup shouldn't lock an educator out of their own file - log it
-    // for us to notice, but still let the widget proceed to download.
+    // A DB hiccup shouldn't block the widget - log it for us to notice.
     console.error("survey: failed to record response", err);
     return Response.json({ ok: true, recorded: false }, { headers: CORS_HEADERS });
   }

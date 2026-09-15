@@ -191,8 +191,18 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // Mandatory pre-download survey (specs/feedback_loop_spec.md, "Embedded
   // satisfaction survey"). Gates Download .h5p only - Open in H5P player and
   // any h5p.com/Lumi links are untouched. Two taps required; text optional.
-  var surveyDone = false, surveyShowing = false, surveySubmitting = false;
-  var surveyHappiness = null, surveyDestination = null;
+  //
+  // Saved as a function of CONTENT (quiz_token + anonUid), not of "did they
+  // click download": the moment both required chips are set, submitSurvey()
+  // fires (upsert on the server) - so the signal is captured even if they
+  // abandon before ever downloading. Any later change (a different chip, or
+  // typing text) re-fires the same upsert, so the row always reflects their
+  // current answer. "Continue to download" no longer does anything the chip
+  // handlers don't already do; it just fires once more (covers unflushed
+  // debounced text) and opens the file.
+  var surveyDone = false, surveyShowing = false;
+  var surveyHappiness = null, surveyDestination = null, surveyImprovementText = "";
+  var surveyTextTimer = null;
 
   function qlist(){ return (data && data.questions) || []; }
   function stemOf(q){ return q.stem || q.question || ""; }
@@ -405,10 +415,8 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="survey-row">' + happyChips + '</div>' +
       '<div class="survey-q">Where will you use it?</div>' +
       '<div class="survey-row">' + destChips + '</div>' +
-      '<input class="survey-text" id="sv-text" maxlength="1000" placeholder="Anything specific you\\u2019d change? (optional)" />' +
-      '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>' +
-        (surveySubmitting ? "Saving\\u2026" : "Continue to download") +
-      '</button>' +
+      '<input class="survey-text" id="sv-text" maxlength="1000" value="' + esc(surveyImprovementText) + '" placeholder="Anything specific you\\u2019d change? (optional)" />' +
+      '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>Continue to download</button>' +
     '</div>';
   }
 
@@ -579,6 +587,27 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     } catch (e) {}
   }
 
+  // Fire-and-forget upsert of the current survey answer, keyed server-side
+  // by (quiz_token, anonUid) - called every time either required field is
+  // set, and again on later changes, so the stored row always reflects the
+  // latest answer for THIS content version, whether or not download ever
+  // happens. No-ops until both required fields are set.
+  function submitSurvey(){
+    if (!(surveyHappiness && surveyDestination)) return;
+    try {
+      fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anonUid: data && data.anonUid,
+          happiness: surveyHappiness,
+          destination: surveyDestination,
+          improvementText: surveyImprovementText ? surveyImprovementText.slice(0, 1000) : undefined,
+        }),
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
   function wire(){
     var by = function(id){ return document.getElementById(id); };
 
@@ -637,36 +666,33 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var happyBtns = document.querySelectorAll("[data-sv-happy]");
     for (var hi = 0; hi < happyBtns.length; hi++){
       happyBtns[hi].onclick = function(){
-        surveyHappiness = this.getAttribute("data-sv-happy"); render();
+        surveyHappiness = this.getAttribute("data-sv-happy"); render(); submitSurvey();
       };
     }
     var destBtns = document.querySelectorAll("[data-sv-dest]");
     for (var di = 0; di < destBtns.length; di++){
       destBtns[di].onclick = function(){
-        surveyDestination = this.getAttribute("data-sv-dest"); render();
+        surveyDestination = this.getAttribute("data-sv-dest"); render(); submitSurvey();
       };
     }
+    var svText = by("sv-text");
+    if (svText) svText.oninput = function(){
+      // No render() here - the input already holds what the user typed;
+      // re-rendering mid-keystroke would just fight the caret position.
+      // The value= attribute in surveyPrompt() picks up surveyImprovementText
+      // on whatever render() happens next (e.g. from a chip click).
+      surveyImprovementText = this.value;
+      clearTimeout(surveyTextTimer);
+      surveyTextTimer = setTimeout(submitSurvey, 800);
+    };
     var svContinue = by("sv-continue");
     if (svContinue) svContinue.onclick = function(){
-      if (!(surveyHappiness && surveyDestination) || surveySubmitting) return;
-      surveySubmitting = true; render();
-      var textEl = by("sv-text");
-      var body = {
-        anonUid: data.anonUid || null,
-        happiness: surveyHappiness,
-        destination: surveyDestination,
-        improvementText: (textEl && textEl.value) ? textEl.value.slice(0, 1000) : undefined,
-      };
-      var finish = function(){
-        surveyDone = true; surveyShowing = false; surveySubmitting = false;
-        openExternal(data.downloadUrl);
-        render();
-      };
-      fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).then(finish).catch(finish); // never let a network hiccup block the download
+      if (!(surveyHappiness && surveyDestination)) return;
+      clearTimeout(surveyTextTimer);
+      submitSurvey(); // covers any text typed in the last 800ms, unflushed
+      surveyDone = true; surveyShowing = false;
+      openExternal(data.downloadUrl);
+      render();
     };
 
     if (mode === "js" && !finished && !checked[qi]){
@@ -698,8 +724,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       // hasn't been surveyed yet even if an earlier version already was.
       // Without this, completing the survey once would silently skip it
       // for every later refinement in the same chat.
-      surveyDone = false; surveyShowing = false; surveySubmitting = false;
-      surveyHappiness = null; surveyDestination = null;
+      clearTimeout(surveyTextTimer);
+      surveyDone = false; surveyShowing = false;
+      surveyHappiness = null; surveyDestination = null; surveyImprovementText = "";
     }
     if (h5pNode && data.playerUrl !== prevPlayerUrl){
       h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];

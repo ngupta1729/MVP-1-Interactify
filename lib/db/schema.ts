@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * MVP 2 — usage analytics + feedback loop (specs/feedback_loop_spec.md).
@@ -36,9 +36,21 @@ export const events = pgTable(
 );
 
 /**
- * One row per submitted survey (see "Embedded satisfaction survey" in
- * specs/feedback_loop_spec.md). Fires exactly once per quiz card, gating the
- * Download .h5p button - so a row here also *is* the record of a download.
+ * One row per (quizToken, anonUid) - see "Embedded satisfaction survey" in
+ * specs/feedback_loop_spec.md. A row is a function of CONTENT VERSION, not
+ * of session or of ever completing a download: the widget upserts here the
+ * moment both required fields (happiness, destination) are set, and again on
+ * any later change, so the row always holds the latest answer for that exact
+ * quiz content - whether or not download ever actually happens. Completing
+ * "Continue to download" fires one more upsert (catches unflushed debounced
+ * text) then opens the file; it's a convenience, not the only save point.
+ *
+ * The (quizToken, anonUid) unique index is what makes the upsert safe: two
+ * different people who happen to generate byte-identical content (same
+ * token) still get separate rows, but the same person re-answering the same
+ * content overwrites their own row instead of duplicating it. Caveat:
+ * Postgres never treats two NULLs as equal, so anonymous calls (anonUid
+ * null - Claude Desktop, MCP Inspector) get no deduping; each is its own row.
  */
 export const surveyResponses = pgTable(
   "survey_responses",
@@ -50,6 +62,7 @@ export const surveyResponses = pgTable(
     destination: text("destination").notNull(), // 'lms' | 'own_site' | 'shared_direct' | 'not_sure' | 'other'
     improvementText: text("improvement_text"), // optional free text, never required
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("survey_quiz_token_idx").on(t.quizToken)],
+  (t) => [uniqueIndex("survey_token_anon_uid_idx").on(t.quizToken, t.anonUid)],
 );
