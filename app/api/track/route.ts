@@ -65,7 +65,7 @@ export async function GET(req: Request) {
   const dest = new URL(base);
   dest.searchParams.set("utm_source", "interactify");
   dest.searchParams.set("utm_medium", "referral");
-  dest.searchParams.set("utm_campaign", "h5p_quiz");
+  dest.searchParams.set("utm_campaign", "interactify");
   return NextResponse.redirect(dest.toString(), { status: 302 });
 }
 
