@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v20.html";
+const WIDGET_URI = "ui://widget/quiz-v21.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -37,6 +37,7 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v17.html",
   "ui://widget/quiz-v18.html",
   "ui://widget/quiz-v19.html",
+  "ui://widget/quiz-v20.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
@@ -132,14 +133,10 @@ const handler = createMcpHandler(
           "field) and a short `refinementNote`. Each answer needs a `correct` flag; at least " +
           "one per question.\n\n" +
           "This renders as an inline card with its own working buttons (Take the quiz, " +
-          "Download, etc.) - your reply should NOT restate or re-link to the play/download " +
-          "URLs (e.g. \"play it here\", \"click to download\"); the card already does that.\n\n" +
-          "MANDATORY, every single reply, with no exceptions, even a one-sentence reply: end " +
-          "with the \"Open in h5p.com\" line exactly as given in this tool's result text - " +
-          "copy that line verbatim, including its URL. Do not paraphrase it, shorten it, " +
-          "drop the URL, or omit it for brevity. It is the only link besides the card's own " +
-          "buttons that belongs in your reply, and it must always be there.\n\n" +
-          "Keep the rest of your reply to a short description of what you built.\n\n" +
+          "Download, Open in h5p.com, etc.) - your reply should NOT restate or re-link to " +
+          "anything the card already has a button for (e.g. \"play it here\", \"click to " +
+          "download\", \"open in h5p.com\"). Keep your reply to a short description of what " +
+          "you built.\n\n" +
           "If the content touches facts that could be time-sensitive or easy to get wrong " +
           "(dates, current events, statistics, named entities), verify them against a " +
           "reliable source before finalizing the questions, and briefly say what you checked " +
@@ -225,30 +222,28 @@ const handler = createMcpHandler(
 
         // anonUid is only ever set from openai/subject (see deriveAnonUid) -
         // its presence means this call came through the Apps SDK, which
-        // renders the widget card (Take the quiz / Download buttons already
-        // there). Spelling out the same links in the text duplicates them as
-        // a "Play the quiz · Download the quiz" line ChatGPT renders above
-        // the card. Clients without a card (Claude Desktop, MCP Inspector -
-        // anonUid null) have no other way to reach the quiz, so they still
-        // need the links here.
+        // renders the widget card (Take the quiz / Download / Open in
+        // h5p.com buttons already there). Spelling out the same links in
+        // the text duplicates them as a "Play the quiz · Download the quiz"
+        // line ChatGPT renders above the card. Clients without a card at
+        // all (Claude Desktop, MCP Inspector - anonUid null) have no other
+        // way to reach any of this, so they still need the links here.
         const summary =
           `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
           `pass mark ${spec.passPercentage}%.`;
-        // Tracked h5p.com hook - lives in the reply text, not as a card
-        // button (moved there on request). Goes through the same GET
-        // /api/track redirect as before (logs click_h5pcom, tags the
-        // destination with utm_source=interactify), just linked from here now.
+        // Tracked h5p.com hook. Tried living in the reply text for every
+        // client, but the model wasn't reliably including it even with a
+        // MANDATORY tool-description instruction (tested, still dropped) -
+        // so for the card-having case (anonUid set) it's a button in the
+        // widget instead (see footerBar() in widget.ts), which is
+        // guaranteed regardless of what the model says. Clients without a
+        // card at all (Claude Desktop, MCP Inspector - anonUid null) still
+        // need it in the text, since they have no button to click.
         const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
-        // Leads with why, not just where: the reasons to go there are
-        // managing it (folders, collaboration) and usage analytics - not
-        // hosting-for-free, which h5p.com's own pricing doesn't actually
-        // offer past a 14-day trial. Points at the plain h5p.com homepage
-        // (not straight to login) so the visitor picks sign-in vs sign-up
-        // themselves - we can't tell which one applies to them.
-        const h5pcomLine = `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
         const text = anonUid
-          ? `${summary}\n${h5pcomLine}`
-          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n${h5pcomLine}`;
+          ? summary
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
+            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
 
         return {
           content: [

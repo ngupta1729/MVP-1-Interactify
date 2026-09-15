@@ -167,6 +167,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   .h5pbar .reuse:hover { color: #222; }
   .h5pbar .logo { font-weight: 800; color: #2a2a2a; letter-spacing: .02em; cursor: pointer; }
   .h5pbar .logo:hover { color: #000; }
+  .h5pbar .h5pcom { color: #555; cursor: pointer; }
+  .h5pbar .h5pcom:hover { color: #1a73d9; }
+  .h5pbar .h5pcom b { color: var(--blue); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -520,11 +523,21 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
 
   function footerBar(){
-    // Hidden: "Reuse" duplicated Download exactly (same startDownload() call)
-    // with no distinct behavior of its own, and the "H5P" logo just linked
-    // out to h5p.org - neither earned its place. Left commented, not
-    // deleted, in case the H5P-embed-footer look is wanted back later.
-    return "";
+    // "Reuse" and the "H5P" logo stay hidden - "Reuse" duplicated Download
+    // exactly (same startDownload() call) with no distinct behavior of its
+    // own, and the logo just linked out to h5p.org; neither earned its
+    // place. Left commented, not deleted, in case that look is wanted back.
+    //
+    // The h5p.com hook lives here now, in the card - it was in the reply
+    // text first, but the model wasn't reliably including it there even
+    // with a MANDATORY tool-description instruction (verified empirically:
+    // tested, still dropped). Card markup is guaranteed regardless of what
+    // the model chooses to say, unlike anything routed through its reply.
+    if (!(data && data.token)) return "";
+    return '<div class="h5pbar">' +
+      '<span class="h5pcom" id="h5pcom">Want folders, collaboration, or analytics? ' +
+        '<b>Open in h5p.com \\u2197</b></span>' +
+    '</div>';
     // return '<div class="h5pbar">' +
     //   '<span class="reuse" id="reuse">\\u21ba Reuse</span>' +
     //   '<span class="logo" id="logo">H5P</span>' +
@@ -672,11 +685,11 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     }
     var dl = by("dl");
     if (dl) dl.onclick = function(){ startDownload("click_download"); };
-    // var h5pcom = by("h5pcom");
-    // if (h5pcom) h5pcom.onclick = function(){
-    //   var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
-    //   openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
-    // };
+    var h5pcom = by("h5pcom");
+    if (h5pcom) h5pcom.onclick = function(){
+      var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
+      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
+    };
     // "full" (Open in H5P player), "reuse" and "logo" are no longer rendered
     // (see actionBtns()/footerBar()) - wiring left commented alongside them
     // rather than deleted, so restoring the buttons and their handlers stays
