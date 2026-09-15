@@ -566,11 +566,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // answered by whether a survey_responses row exists for this token).
   function logClick(eventType){
     try {
+      // No keepalive: none of these clicks navigate the widget's own page
+      // away (openExternal always opens a new tab/window), so there's
+      // nothing here for keepalive to protect - and keepalive fetches are
+      // known to behave inconsistently in sandboxed/embedded contexts
+      // (this call's survey counterpart, without keepalive, works fine).
       fetch(assetOrigin() + "/api/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: data && data.token, eventType: eventType, anonUid: data && data.anonUid }),
-        keepalive: true,
       }).catch(function(){});
     } catch (e) {}
   }
