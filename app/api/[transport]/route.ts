@@ -128,7 +128,15 @@ const handler = createMcpHandler(
           "user's content, then call this with the full question list. To refine, call again " +
           "with the updated list, passing `previousToken` (from the earlier result's `token` " +
           "field) and a short `refinementNote`. Each answer needs a `correct` flag; at least " +
-          "one per question.",
+          "one per question.\n\n" +
+          "This renders as an inline card with its own working buttons (Take the quiz, " +
+          "Download, etc.) - your reply should NOT restate or re-link to the play/download " +
+          "URLs (e.g. \"play it here\", \"click to download\"); the card already does that. " +
+          "Keep your reply to a short description of what you built.\n\n" +
+          "If the content touches facts that could be time-sensitive or easy to get wrong " +
+          "(dates, current events, statistics, named entities), verify them against a " +
+          "reliable source before finalizing the questions, and briefly say what you checked " +
+          "them against.",
         inputSchema: toolInputShape as unknown as z.ZodRawShape,
         _meta: {
           "openai/outputTemplate": WIDGET_URI,
