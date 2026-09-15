@@ -53,6 +53,24 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     word-break: break-all;
   }
 
+  .survey {
+    margin-top: 14px; padding: 12px 14px; border-radius: 6px;
+    background: #f4f7fb; border: 1px solid #dde6f0;
+  }
+  .survey-q { font-size: .88em; font-weight: 600; margin: 8px 0 6px; }
+  .survey-q:first-child { margin-top: 0; }
+  .survey-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .chip {
+    font: inherit; font-size: .82em; cursor: pointer; border: 1px solid #c7d2de;
+    background: #fff; color: var(--ink); border-radius: 999px; padding: 5px 12px;
+  }
+  .chip:hover { background: #eef3f9; }
+  .chip.sel { background: var(--sel-bg); border-color: var(--sel-bd); color: var(--sel-tx); }
+  .survey-text {
+    font: inherit; font-size: .85em; width: 100%; box-sizing: border-box;
+    margin: 6px 0 10px; padding: 7px 10px; border: 1px solid #c7d2de; border-radius: 4px;
+  }
+
   #h5proot-slot { margin-top: 6px; }
   /* keep the real H5P activity on a white ground inside the card */
   #h5proot-slot .h5p-content, #h5proot-slot .h5p-container { background: #fff; }
@@ -169,6 +187,12 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   var assetErrors = [];    // src/href of any <script>/<link> that failed to load
   var h5pNode = null;      // the live element h5p-standalone renders into (kept across re-renders)
   var qi = 0, picks = [], checked = [], finished = false;
+
+  // Mandatory pre-download survey (specs/feedback_loop_spec.md, "Embedded
+  // satisfaction survey"). Gates Download .h5p only - Open in H5P player and
+  // any h5p.com/Lumi links are untouched. Two taps required; text optional.
+  var surveyDone = false, surveyShowing = false, surveySubmitting = false;
+  var surveyHappiness = null, surveyDestination = null;
 
   function qlist(){ return (data && data.questions) || []; }
   function stemOf(q){ return q.stem || q.question || ""; }
@@ -355,6 +379,39 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '</div>';
   }
 
+  // ---------- pre-download survey ----------
+  // Not about this quiz's content quality (that's refinementNote + the diff
+  // classifier's job) - happiness, intended destination, and what would make
+  // the experience better. Two taps required; text stays optional.
+  var HAPPINESS_OPTS = [["happy", "\\ud83d\\ude0a", "Happy"], ["okay", "\\ud83d\\ude10", "It's okay"], ["not_happy", "\\ud83d\\ude1e", "Not happy"]];
+  var DEST_OPTS = [
+    ["lms", "\\ud83c\\udfeb My LMS"], ["own_site", "\\ud83c\\udf10 My own site"],
+    ["shared_direct", "\\ud83d\\udd17 Shared directly"], ["not_sure", "\\ud83e\\udd14 Not sure yet"], ["other", "Other"]
+  ];
+
+  function surveyPrompt(){
+    var happyChips = HAPPINESS_OPTS.map(function(o){
+      var sel = surveyHappiness === o[0] ? " sel" : "";
+      return '<button class="chip' + sel + '" data-sv-happy="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>';
+    }).join("");
+    var destChips = DEST_OPTS.map(function(o){
+      var sel = surveyDestination === o[0] ? " sel" : "";
+      return '<button class="chip' + sel + '" data-sv-dest="' + o[0] + '">' + o[1] + '</button>';
+    }).join("");
+    var ready = !!(surveyHappiness && surveyDestination);
+
+    return '<div class="survey">' +
+      '<div class="survey-q">Before you download \\u2014 how happy are you with this quiz?</div>' +
+      '<div class="survey-row">' + happyChips + '</div>' +
+      '<div class="survey-q">Where will you use it?</div>' +
+      '<div class="survey-row">' + destChips + '</div>' +
+      '<input class="survey-text" id="sv-text" maxlength="1000" placeholder="Anything specific you\\u2019d change? (optional)" />' +
+      '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>' +
+        (surveySubmitting ? "Saving\\u2026" : "Continue to download") +
+      '</button>' +
+    '</div>';
+  }
+
   // ---------- JS fallback runner (H5P-styled) ----------
   function jsView(){
     if (finished) return resultsView();
@@ -464,6 +521,11 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       '<div class="meta">' + count + ' question' + (count === 1 ? "" : "s") +
         ' \\u00b7 H5P Question Set \\u00b7 pass mark ' + ((data.passPercentage) || 60) + '%</div>' +
       body +
+      // Centralized here (not per-view) so it shows immediately regardless of
+      // which view Download was clicked from - realView/resultsView/keyView
+      // all reach the download button via actionBtns(); jsView mid-quiz never
+      // renders that button at all, so this never fires there.
+      (surveyShowing ? surveyPrompt() : "") +
       footerBar();
 
     if (mode === "real" && h5pNode){
@@ -471,6 +533,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       if (slot && h5pNode.parentNode !== slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
     }
     wire();
+    notifyHeight();
   }
 
   function openExternal(url){
@@ -484,11 +547,40 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     window.open(url, "_blank", "noopener");
   }
 
+  // ChatGPT sizes the card's iframe once and does NOT auto-resize it as our
+  // own content grows (e.g. the real H5P activity mounting, then the survey
+  // appending below it) - without this, later content is silently clipped
+  // outside the frame with no scrollbar, not just off-screen-but-scrollable.
+  // Called after every render() since any render can change content height.
+  function notifyHeight(){
+    try {
+      if (window.openai && typeof window.openai.notifyIntrinsicHeight === "function"){
+        window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+      }
+    } catch (e) {}
+  }
+
+  // Fire-and-forget click logging - counts the click itself, independent of
+  // whatever happens after (e.g. click_download always counts even if the
+  // survey it triggers is never completed; that's a separate question,
+  // answered by whether a survey_responses row exists for this token).
+  function logClick(eventType){
+    try {
+      fetch(assetOrigin() + "/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: data && data.token, eventType: eventType, anonUid: data && data.anonUid }),
+        keepalive: true,
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
   function wire(){
     var by = function(id){ return document.getElementById(id); };
 
     var start = by("start");
     if (start) start.onclick = function(){
+      logClick("click_take_quiz");
       // h5p-standalone's core library sets globals (window.H5P, window.H5PIntegration)
       // the first time it loads and never fully resets them, so mounting a *second*
       // fresh instance into a *new* h5pNode is unreliable - it can silently render
@@ -504,7 +596,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     };
 
     var key = by("key");
-    if (key) key.onclick = function(){ mode = "key"; render(); };
+    if (key) key.onclick = function(){ logClick("click_answer_key"); mode = "key"; render(); };
 
     var check = by("check");
     if (check) check.onclick = function(){
@@ -518,14 +610,60 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var retry = by("retry");
     if (retry) retry.onclick = function(){ resetRun(); render(); };
 
+    // Download is gated by the mandatory survey; the footer "Reuse" link is
+    // the same action under a different label, so it's gated the same way -
+    // otherwise it's a one-click bypass sitting right next to the real gate.
+    // The click itself is logged unconditionally, every time, regardless of
+    // whether the survey ends up completed - that's a separate question,
+    // answered by whether a survey_responses row exists for this token.
+    function startDownload(logType){
+      logClick(logType);
+      if (surveyDone){ openExternal(data.downloadUrl); return; }
+      surveyShowing = true; render();
+    }
     var dl = by("dl");
-    if (dl) dl.onclick = function(){ openExternal(data.downloadUrl); };
+    if (dl) dl.onclick = function(){ startDownload("click_download"); };
     var full = by("full");
-    if (full) full.onclick = function(){ openExternal(data.playUrl); };
+    if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(data.playUrl); };
     var reuse = by("reuse");
-    if (reuse) reuse.onclick = function(){ openExternal(data.downloadUrl); };
+    if (reuse) reuse.onclick = function(){ startDownload("click_reuse"); };
     var logo = by("logo");
-    if (logo) logo.onclick = function(){ openExternal("https://h5p.org"); };
+    if (logo) logo.onclick = function(){ logClick("click_logo"); openExternal("https://h5p.org"); };
+
+    var happyBtns = document.querySelectorAll("[data-sv-happy]");
+    for (var hi = 0; hi < happyBtns.length; hi++){
+      happyBtns[hi].onclick = function(){
+        surveyHappiness = this.getAttribute("data-sv-happy"); render();
+      };
+    }
+    var destBtns = document.querySelectorAll("[data-sv-dest]");
+    for (var di = 0; di < destBtns.length; di++){
+      destBtns[di].onclick = function(){
+        surveyDestination = this.getAttribute("data-sv-dest"); render();
+      };
+    }
+    var svContinue = by("sv-continue");
+    if (svContinue) svContinue.onclick = function(){
+      if (!(surveyHappiness && surveyDestination) || surveySubmitting) return;
+      surveySubmitting = true; render();
+      var textEl = by("sv-text");
+      var body = {
+        anonUid: data.anonUid || null,
+        happiness: surveyHappiness,
+        destination: surveyDestination,
+        improvementText: (textEl && textEl.value) ? textEl.value.slice(0, 1000) : undefined,
+      };
+      var finish = function(){
+        surveyDone = true; surveyShowing = false; surveySubmitting = false;
+        openExternal(data.downloadUrl);
+        render();
+      };
+      fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(finish).catch(finish); // never let a network hiccup block the download
+    };
 
     if (mode === "js" && !finished && !checked[qi]){
       var lis = document.querySelectorAll("li.answer");
@@ -571,6 +709,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     window.addEventListener("openai:set_globals", function(){
       if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
     });
+    // The real H5P runtime mounts and updates its own DOM asynchronously,
+    // outside our render() calls (e.g. finishing its own load, or the learner
+    // clicking its own internal "Check"/"Next") - catch those height changes
+    // too, not just the ones that happen to coincide with our own renders.
+    try {
+      if (typeof ResizeObserver !== "undefined"){
+        new ResizeObserver(function(){ notifyHeight(); }).observe(document.body);
+      }
+    } catch (e) {}
   }
   boot();
 })();

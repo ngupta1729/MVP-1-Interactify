@@ -1,17 +1,21 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { quizSpecShape, quizSpecSchema } from "@/lib/h5p/quizSpec";
-import { encodeSpec } from "@/lib/h5p/pack";
+import { encodeSpec, decodeSpec, warmCache } from "@/lib/h5p/pack";
 import { buildQuizFiles } from "@/lib/h5p/buildQuiz";
+import { classifyRefinement } from "@/lib/h5p/diffQuiz";
 import { QUIZ_WIDGET_HTML } from "@/lib/h5p/widget";
 import { baseUrl } from "@/lib/baseUrl";
+import { getDb } from "@/lib/db";
+import { events } from "@/lib/db/schema";
+import { deriveAnonUid } from "@/lib/db/anon";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v9.html";
+const WIDGET_URI = "ui://widget/quiz-v13.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -22,6 +26,10 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v6.html",
   "ui://widget/quiz-v7.html",
   "ui://widget/quiz-v8.html",
+  "ui://widget/quiz-v9.html",
+  "ui://widget/quiz-v10.html",
+  "ui://widget/quiz-v11.html",
+  "ui://widget/quiz-v12.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
@@ -79,6 +87,32 @@ const handler = createMcpHandler(
       );
     });
 
+    // Metadata-only fields layered on top of the quiz content shape - kept out
+    // of quizSpecSchema itself so they never affect the content-addressed
+    // token (two calls with identical questions must still produce the same
+    // token, regardless of what refinementNote says). See "Understanding
+    // refinement patterns" in specs/feedback_loop_spec.md.
+    const toolInputShape = {
+      ...quizSpecShape,
+      previousToken: z
+        .string()
+        .optional()
+        .describe(
+          "If this is a refinement of a quiz you generated earlier with this tool, pass back " +
+            "that quiz's token (the id segment of its downloadUrl/playUrl/token field) so we " +
+            "can tell what changed.",
+        ),
+      refinementNote: z
+        .string()
+        .max(300)
+        .optional()
+        .describe(
+          "If this is a refinement, briefly say what changed and why (e.g. 'made question 2 " +
+            "harder', 'added a question about photosynthesis'). Helps us understand what " +
+            "educators actually need - not shown to the user, purely internal.",
+        ),
+    };
+
     server.registerTool(
       "create_h5p_quiz",
       {
@@ -87,31 +121,67 @@ const handler = createMcpHandler(
           "Turn learning content into an interactive H5P Question Set (multiple-choice quiz) " +
           "and return a downloadable .h5p file. You (the model) write the questions from the " +
           "user's content, then call this with the full question list. To refine, call again " +
-          "with the updated list. Each answer needs a `correct` flag; at least one per question.",
-        inputSchema: quizSpecShape as unknown as z.ZodRawShape,
+          "with the updated list, passing `previousToken` (from the earlier result's `token` " +
+          "field) and a short `refinementNote`. Each answer needs a `correct` flag; at least " +
+          "one per question.",
+        inputSchema: toolInputShape as unknown as z.ZodRawShape,
         _meta: {
           "openai/outputTemplate": WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P quiz…",
           "openai/toolInvocation/invoked": "Your H5P quiz is ready",
         },
       },
-      async (args) => {
-        const spec = quizSpecSchema.parse(args);
+      async (args, extra) => {
+        const { previousToken, refinementNote, ...quizArgs } = args as Record<string, unknown>;
+        const spec = quizSpecSchema.parse(quizArgs);
         // Build the file set here so bad input fails loudly inside the tool call.
         const built = await buildQuizFiles(spec);
         const token = encodeSpec(spec);
+        // The player route (hit the instant "Take the quiz" is clicked) reads
+        // this same cache by token - prime it now with the package we just
+        // built, instead of making that first click rebuild it cold.
+        warmCache(token, built);
         const base = baseUrl();
         const downloadUrl = `${base}/api/h5p/${token}`;
         const playUrl = `${base}/play/${token}`;
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+
+        // Log on EVERY call, not just refinements - "how many users use the
+        // plugin" needs a row per invocation to count distinct anonUid from.
+        // Best-effort: never let this logging fail the actual tool call.
+        try {
+          if (typeof previousToken === "string" && previousToken) {
+            const prevSpec = decodeSpec(previousToken);
+            const kinds = classifyRefinement(prevSpec, spec);
+            await getDb()
+              .insert(events)
+              .values({
+                quizToken: token,
+                eventType: "refinement",
+                anonUid,
+                detail: JSON.stringify({
+                  previousToken,
+                  kinds,
+                  refinementNote: typeof refinementNote === "string" ? refinementNote : null,
+                }),
+              });
+          } else {
+            await getDb().insert(events).values({ quizToken: token, eventType: "generate", anonUid });
+          }
+        } catch (err) {
+          console.error("create_h5p_quiz: failed to log usage", err);
+        }
 
         const structured = {
           title: spec.title,
           questionCount: spec.questions.length,
           passPercentage: spec.passPercentage,
+          token,
           downloadUrl,
           playUrl,
           playerUrl: `${base}/api/h5p/${token}/player`,
           filename: built.filename,
+          anonUid,
           questions: spec.questions.map((q) => ({
             question: q.question,
             answers: q.answers.map((a) => ({ text: a.text, correct: a.correct })),
