@@ -207,15 +207,22 @@ const handler = createMcpHandler(
           },
         };
 
+        // anonUid is only ever set from openai/subject (see deriveAnonUid) -
+        // its presence means this call came through the Apps SDK, which
+        // renders the widget card (Take the quiz / Download buttons already
+        // there). Spelling out the same links in the text duplicates them as
+        // a "Play the quiz · Download the quiz" line ChatGPT renders above
+        // the card. Clients without a card (Claude Desktop, MCP Inspector -
+        // anonUid null) have no other way to reach the quiz, so they still
+        // need the links here.
+        const summary =
+          `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
+          `pass mark ${spec.passPercentage}%.`;
+        const text = anonUid ? summary : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`;
+
         return {
           content: [
-            {
-              type: "text",
-              text:
-                `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
-                `pass mark ${spec.passPercentage}%.\n` +
-                `Play in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`,
-            },
+            { type: "text", text },
             uiResource,
           ],
           structuredContent: structured,
