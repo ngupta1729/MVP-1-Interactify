@@ -692,6 +692,15 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var prevPlayerUrl = data && data.playerUrl;
     data = o || {};
     if (picks.length !== qlist().length) resetRun();
+    if (data.playerUrl !== prevPlayerUrl){
+      // Survey/download gating is scoped to content, not to the widget's
+      // session - a refinement produces a new token (a new quiz), which
+      // hasn't been surveyed yet even if an earlier version already was.
+      // Without this, completing the survey once would silently skip it
+      // for every later refinement in the same chat.
+      surveyDone = false; surveyShowing = false; surveySubmitting = false;
+      surveyHappiness = null; surveyDestination = null;
+    }
     if (h5pNode && data.playerUrl !== prevPlayerUrl){
       h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
       if (mode === "real") mode = "key";
