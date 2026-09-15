@@ -28,16 +28,32 @@ export interface BuiltPackage {
 const cache = new Map<string, BuiltPackage>();
 const MAX_CACHE = 24;
 
+function setCache(token: string, pkg: BuiltPackage): void {
+  if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value as string);
+  cache.set(token, pkg);
+}
+
 export async function getBuilt(token: string): Promise<BuiltPackage> {
   const hit = cache.get(token);
   if (hit) return hit;
 
   const spec = decodeSpec(token);
   const pkg = await buildQuizFiles(spec);
-
-  if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value as string);
-  cache.set(token, pkg);
+  setCache(token, pkg);
   return pkg;
+}
+
+/**
+ * Pre-populate the cache with a package the caller already built, so the
+ * player route (hit the instant "Take the quiz" is clicked) doesn't have to
+ * rebuild it cold on a fresh Lambda instance. Called from the tool handler,
+ * which builds this same package anyway to validate the spec - this reuses
+ * that work instead of discarding it. Doesn't guarantee a warm hit (a
+ * concurrent request can still land on a different instance), but removes
+ * the single guaranteed-cold case: the very first click on a brand-new token.
+ */
+export function warmCache(token: string, pkg: BuiltPackage): void {
+  setCache(token, pkg);
 }
 
 /** The downloadable .h5p for a token. */

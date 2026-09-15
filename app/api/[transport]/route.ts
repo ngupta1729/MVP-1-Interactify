@@ -1,7 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { quizSpecShape, quizSpecSchema } from "@/lib/h5p/quizSpec";
-import { encodeSpec, decodeSpec } from "@/lib/h5p/pack";
+import { encodeSpec, decodeSpec, warmCache } from "@/lib/h5p/pack";
 import { buildQuizFiles } from "@/lib/h5p/buildQuiz";
 import { classifyRefinement } from "@/lib/h5p/diffQuiz";
 import { QUIZ_WIDGET_HTML } from "@/lib/h5p/widget";
@@ -137,6 +137,10 @@ const handler = createMcpHandler(
         // Build the file set here so bad input fails loudly inside the tool call.
         const built = await buildQuizFiles(spec);
         const token = encodeSpec(spec);
+        // The player route (hit the instant "Take the quiz" is clicked) reads
+        // this same cache by token - prime it now with the package we just
+        // built, instead of making that first click rebuild it cold.
+        warmCache(token, built);
         const base = baseUrl();
         const downloadUrl = `${base}/api/h5p/${token}`;
         const playUrl = `${base}/play/${token}`;
