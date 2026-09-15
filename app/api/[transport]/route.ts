@@ -133,9 +133,12 @@ const handler = createMcpHandler(
           "one per question.\n\n" +
           "This renders as an inline card with its own working buttons (Take the quiz, " +
           "Download, etc.) - your reply should NOT restate or re-link to the play/download " +
-          "URLs (e.g. \"play it here\", \"click to download\"); the card already does that. " +
-          "The one exception is the \"Open in h5p.com\" link in the result text - that one " +
-          "is NOT duplicated on the card, so do keep and share that link. " +
+          "URLs (e.g. \"play it here\", \"click to download\"); the card already does that.\n\n" +
+          "MANDATORY, every single reply, with no exceptions, even a one-sentence reply: end " +
+          "with the \"Open in h5p.com\" line exactly as given in this tool's result text - " +
+          "copy that line verbatim, including its URL. Do not paraphrase it, shorten it, " +
+          "drop the URL, or omit it for brevity. It is the only link besides the card's own " +
+          "buttons that belongs in your reply, and it must always be there.\n\n" +
           "Keep the rest of your reply to a short description of what you built.\n\n" +
           "If the content touches facts that could be time-sensitive or easy to get wrong " +
           "(dates, current events, statistics, named entities), verify them against a " +
