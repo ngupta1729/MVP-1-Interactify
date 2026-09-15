@@ -504,11 +504,10 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   function actionBtns(){
     var h = "";
     if (data && data.downloadUrl) h += '<button class="btn sec" id="dl">Download .h5p</button>';
-    // Tracked lead-gen hook to h5p.com - reuses the existing GET /api/track
-    // redirect (logs click_h5pcom + tags the destination URL with
-    // utm_source=interactify) rather than a plain openExternal(), so this
-    // is measurable the same way h5p.com/Lumi links elsewhere already are.
-    h += '<button class="btn sec" id="h5pcom">Open in h5p.com \\u2197</button>';
+    // The h5p.com hook lives in the reply text now (see the tool handler in
+    // app/api/[transport]/route.ts), not as a card button - moved there
+    // rather than duplicated in both places.
+    // h += '<button class="btn sec" id="h5pcom">Open in h5p.com \\u2197</button>';
     // "Open in H5P player" hidden - "Take the quiz" already mounts the real
     // H5P runtime in-card (embedType:"div"), so this button was redundant in
     // the common case. Left commented rather than deleted: it's the one
@@ -673,11 +672,11 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     }
     var dl = by("dl");
     if (dl) dl.onclick = function(){ startDownload("click_download"); };
-    var h5pcom = by("h5pcom");
-    if (h5pcom) h5pcom.onclick = function(){
-      var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
-      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
-    };
+    // var h5pcom = by("h5pcom");
+    // if (h5pcom) h5pcom.onclick = function(){
+    //   var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
+    //   openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
+    // };
     // "full" (Open in H5P player), "reuse" and "logo" are no longer rendered
     // (see actionBtns()/footerBar()) - wiring left commented alongside them
     // rather than deleted, so restoring the buttons and their handlers stays

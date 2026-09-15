@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v19.html";
+const WIDGET_URI = "ui://widget/quiz-v20.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -36,6 +36,7 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v16.html",
   "ui://widget/quiz-v17.html",
   "ui://widget/quiz-v18.html",
+  "ui://widget/quiz-v19.html",
 ];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
@@ -133,7 +134,9 @@ const handler = createMcpHandler(
           "This renders as an inline card with its own working buttons (Take the quiz, " +
           "Download, etc.) - your reply should NOT restate or re-link to the play/download " +
           "URLs (e.g. \"play it here\", \"click to download\"); the card already does that. " +
-          "Keep your reply to a short description of what you built.\n\n" +
+          "The one exception is the \"Open in h5p.com\" link in the result text - that one " +
+          "is NOT duplicated on the card, so do keep and share that link. " +
+          "Keep the rest of your reply to a short description of what you built.\n\n" +
           "If the content touches facts that could be time-sensitive or easy to get wrong " +
           "(dates, current events, statistics, named entities), verify them against a " +
           "reliable source before finalizing the questions, and briefly say what you checked " +
@@ -228,7 +231,14 @@ const handler = createMcpHandler(
         const summary =
           `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
           `pass mark ${spec.passPercentage}%.`;
-        const text = anonUid ? summary : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`;
+        // Tracked h5p.com hook - lives in the reply text, not as a card
+        // button (moved there on request). Goes through the same GET
+        // /api/track redirect as before (logs click_h5pcom, tags the
+        // destination with utm_source=interactify), just linked from here now.
+        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
+        const text = anonUid
+          ? `${summary}\nOpen in h5p.com: ${h5pcomUrl}`
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\nOpen in h5p.com: ${h5pcomUrl}`;
 
         return {
           content: [
