@@ -504,15 +504,27 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   function actionBtns(){
     var h = "";
     if (data && data.downloadUrl) h += '<button class="btn sec" id="dl">Download .h5p</button>';
-    if (data && data.playUrl) h += '<button class="btn sec" id="full">Open in H5P player \\u2197</button>';
+    // "Open in H5P player" hidden - "Take the quiz" already mounts the real
+    // H5P runtime in-card (embedType:"div"), so this button was redundant in
+    // the common case. Left commented rather than deleted: it's the one
+    // fallback to the guaranteed-real runtime if the in-card mount ever
+    // falls back to the JS lookalike, and it's still how the /play/<token>
+    // page is reached at all by non-widget MCP clients (Claude Desktop,
+    // MCP Inspector) - that route itself is untouched, only this button.
+    // if (data && data.playUrl) h += '<button class="btn sec" id="full">Open in H5P player \\u2197</button>';
     return h;
   }
 
   function footerBar(){
-    return '<div class="h5pbar">' +
-      '<span class="reuse" id="reuse">\\u21ba Reuse</span>' +
-      '<span class="logo" id="logo">H5P</span>' +
-    '</div>';
+    // Hidden: "Reuse" duplicated Download exactly (same startDownload() call)
+    // with no distinct behavior of its own, and the "H5P" logo just linked
+    // out to h5p.org - neither earned its place. Left commented, not
+    // deleted, in case the H5P-embed-footer look is wanted back later.
+    return "";
+    // return '<div class="h5pbar">' +
+    //   '<span class="reuse" id="reuse">\\u21ba Reuse</span>' +
+    //   '<span class="logo" id="logo">H5P</span>' +
+    // '</div>';
   }
 
   function render(){
@@ -656,12 +668,16 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     }
     var dl = by("dl");
     if (dl) dl.onclick = function(){ startDownload("click_download"); };
-    var full = by("full");
-    if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(data.playUrl); };
-    var reuse = by("reuse");
-    if (reuse) reuse.onclick = function(){ startDownload("click_reuse"); };
-    var logo = by("logo");
-    if (logo) logo.onclick = function(){ logClick("click_logo"); openExternal("https://h5p.org"); };
+    // "full" (Open in H5P player), "reuse" and "logo" are no longer rendered
+    // (see actionBtns()/footerBar()) - wiring left commented alongside them
+    // rather than deleted, so restoring the buttons and their handlers stays
+    // a single, obvious revert.
+    // var full = by("full");
+    // if (full) full.onclick = function(){ logClick("click_open_player"); openExternal(data.playUrl); };
+    // var reuse = by("reuse");
+    // if (reuse) reuse.onclick = function(){ startDownload("click_reuse"); };
+    // var logo = by("logo");
+    // if (logo) logo.onclick = function(){ logClick("click_logo"); openExternal("https://h5p.org"); };
 
     var happyBtns = document.querySelectorAll("[data-sv-happy]");
     for (var hi = 0; hi < happyBtns.length; hi++){
