@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           previousSpec: parsed.previousSpec,
         });
     const built = await buildQuizFiles(spec);
-    const token = encodeSpec(spec);
+    const token = encodeSpec({ kind: "quiz", spec });
     return Response.json({
       id: token,
       spec,

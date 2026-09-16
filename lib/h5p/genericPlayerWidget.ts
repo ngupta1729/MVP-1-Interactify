@@ -1,0 +1,289 @@
+/**
+ * Shared inline component factory for content types beyond the quiz (Book,
+ * Video): mounts the REAL H5P runtime (h5p-standalone, embedType "div") the
+ * same way QUIZ_WIDGET_HTML does. Unlike the quiz widget, this has no
+ * bespoke JS-lookalike fallback or answer-key view — those are irreducibly
+ * quiz-shaped. On failure it falls back to a plain "open the full player"
+ * link instead.
+ */
+export interface PlayerWidgetOptions {
+  kind: "book" | "video";
+  label: string; // "book" | "video" — used in button/status text
+  metaLabel: string; // e.g. "H5P Interactive Book" / "H5P Interactive Video"
+  successSelectors: string; // CSS selectors that indicate the real player actually rendered
+}
+
+export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
+  const { label, metaLabel, successSelectors } = opts;
+  const Label = label.charAt(0).toUpperCase() + label.slice(1);
+
+  return /* html */ `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --blue:#1a73d9; --blue-d:#1356a3; --blue-a:#104888; --ink:#1a1a1a; --muted:#6b6b6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 "Open Sans", "Segoe UI", Roboto, -apple-system, system-ui, sans-serif; color: var(--ink); }
+  .h5pcard { background: #fff; color: var(--ink); border: 1px solid #d5d5d5; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px 20px 12px; }
+  h1.title { font-size: 1.35em; font-weight: 700; margin: 0 0 1px; }
+  .meta { color: var(--muted); font-size: .8em; margin-bottom: 4px; }
+  .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 22px 4px; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #dddddd; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fallback-note { color: var(--muted); font-size: .78em; margin: 10px 0 0; }
+  .fallback-note summary { cursor: pointer; }
+  .fallback-note .why { margin-top: 5px; padding: 6px 8px; border-radius: 4px; background: #f4f4f4; color: #555; font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+  #h5proot-slot { margin-top: 6px; }
+  #h5proot-slot .h5p-content, #h5proot-slot .h5p-container { background: #fff; }
+  .foot { margin-top: 14px; }
+  button.btn { font: inherit; cursor: pointer; border: 0; border-radius: 2em; padding: 8px 20px; margin: 0 8px 6px 0; background: var(--blue); color: #fff; font-weight: 400; }
+  button.btn:hover { background: var(--blue-d); }
+  button.btn:active { background: var(--blue-a); }
+  button.btn[disabled] { opacity: .45; cursor: default; }
+  button.btn.sec { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+  button.btn.sec:hover { background: #f2f7fd; }
+  .h5pbar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e2e2; font-size: .72em; }
+  .h5pbar .h5pcom { color: #555; cursor: pointer; }
+  .h5pbar .h5pcom:hover { color: #1a73d9; }
+  .h5pbar .h5pcom b { color: var(--blue); font-weight: 700; }
+  .h5pbar .ver { color: #bbb; flex: none; margin-left: 10px; }
+</style>
+</head>
+<body>
+<div class="h5pcard" id="root">Loading&hellip;</div>
+<script>
+(function(){
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
+  }); }
+
+  var WIDGET_VERSION = "v1";
+  var data = null;
+  var mode = "idle"; // idle | real
+  var realState = "idle"; // idle | loading | ok | failed
+  var failReason = "";
+  var assetErrors = [];
+  var h5pNode = null;
+
+  function assetOrigin(){ return data.appOrigin || ""; }
+  function playUrl(){ return (data.appOrigin || "") + "/play/" + (data.token || ""); }
+  function downloadUrl(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || ""); }
+  function playerBase(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || "") + "/player"; }
+
+  function loadScriptOnce(src){
+    return new Promise(function(res, rej){
+      var existing = document.querySelector('script[data-h5p="1"]');
+      if (existing){
+        if (window.H5PStandalone) return res();
+        existing.addEventListener("load", function(){ res(); }, { once: true });
+        existing.addEventListener("error", function(){ rej(new Error("load error")); }, { once: true });
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = src; s.dataset.h5p = "1";
+      s.onload = function(){ res(); };
+      s.onerror = function(){ rej(new Error("could not load " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  var warmed = false;
+  function warmRuntime(){
+    if (warmed) return;
+    var origin = assetOrigin();
+    if (!origin) return;
+    warmed = true;
+    loadScriptOnce(origin + "/h5p-standalone/main.bundle.js").catch(function(){});
+  }
+
+  function diag(){
+    var d = [];
+    if (assetErrors.length) d.push(assetErrors.length + " asset(s) failed to load: " + assetErrors.slice(-3).join(" , "));
+    d.push("H5PStandalone=" + (window.H5PStandalone ? "yes" : "no"));
+    return d.join(" | ");
+  }
+
+  function mountReal(){
+    var origin = assetOrigin(), base = playerBase();
+    if (!origin || !base) return failReal("no player URL in the tool output");
+
+    var settled = false;
+    var watchdog = setTimeout(function(){ if (!settled){ settled = true; failReal("timed out after 25s"); } }, 25000);
+
+    h5pNode = document.createElement("div");
+    render();
+    if (!(document.body && document.body.contains(h5pNode))){
+      settled = true; clearTimeout(watchdog);
+      return failReal("could not attach the mount point");
+    }
+
+    loadScriptOnce(origin + "/h5p-standalone/main.bundle.js")
+      .then(function(){
+        if (settled) return;
+        if (!(window.H5PStandalone && window.H5PStandalone.H5P)) throw new Error("h5p-standalone loaded but did not define H5PStandalone");
+        return new window.H5PStandalone.H5P(h5pNode, {
+          h5pJsonPath: base,
+          frameJs: origin + "/h5p-standalone/frame.bundle.js",
+          frameCss: origin + "/h5p-standalone/styles/h5p.css",
+          embedType: "div",
+        });
+      })
+      .then(function(){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
+        setTimeout(function(){
+          if (h5pNode.querySelector(${JSON.stringify(successSelectors)})){
+            realState = "ok"; mode = "real"; render();
+          } else {
+            failReal("runtime loaded but rendered nothing recognizable");
+          }
+        }, 700);
+      })
+      .catch(function(err){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
+        failReal((err && err.message) || String(err));
+      });
+  }
+
+  function failReal(reason){
+    failReason = (reason || "unknown") + " - " + diag();
+    realState = "failed"; mode = "failed";
+    render();
+  }
+
+  function openExternal(url){
+    if (!url) return;
+    try {
+      if (window.openai && typeof window.openai.openExternal === "function"){
+        window.openai.openExternal({ href: url });
+        return;
+      }
+    } catch (e) {}
+    window.open(url, "_blank", "noopener");
+  }
+
+  function logClick(eventType){
+    try {
+      fetch(assetOrigin() + "/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: data && data.token, eventType: eventType, anonUid: data && data.anonUid }),
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
+  function body(){
+    if (mode === "real"){
+      var busy = realState === "loading" ? '<div class="loading"><span class="spinner"></span>Loading&hellip;</div>' : '';
+      return busy + '<div id="h5proot-slot"></div>' +
+        '<div class="foot">' + actionBtns() + '</div>';
+    }
+    if (mode === "failed"){
+      return '<details class="fallback-note" open>' +
+          '<summary>Could not mount the interactive ${label} inline &mdash; open the full player instead.</summary>' +
+          '<div class="why">' + esc(failReason) + '</div>' +
+        '</details>' +
+        '<div class="foot">' +
+          '<button class="btn" id="openfull">Open the ${Label} \\u2197</button>' +
+          actionBtns() +
+        '</div>';
+    }
+    return '<div class="foot">' +
+      '<button class="btn" id="start">\\u25b6 Open the ${label}</button>' +
+      actionBtns() +
+    '</div>';
+  }
+
+  function actionBtns(){
+    var h = "";
+    if (data && data.token) h += '<button class="btn sec" id="dl">Download .h5p</button>';
+    return h;
+  }
+
+  function footerBar(){
+    if (!(data && data.token)) return "";
+    return '<div class="h5pbar">' +
+      '<span class="h5pcom" id="h5pcom">Want folders, collaboration, or analytics? ' +
+        '<b>Open in h5p.com \\u2197</b></span>' +
+      '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
+    '</div>';
+  }
+
+  function render(){
+    if (!data) return;
+    var root = document.getElementById("root");
+    root.innerHTML =
+      '<h1 class="title">' + esc(data.title || "${Label}") + '</h1>' +
+      '<div class="meta">' + esc(data.meta || "${metaLabel}") + '</div>' +
+      body() + footerBar();
+
+    if (mode === "real" && h5pNode){
+      var slot = document.getElementById("h5proot-slot");
+      if (slot && h5pNode.parentNode !== slot){ slot.innerHTML = ""; slot.appendChild(h5pNode); }
+    }
+    wire();
+    notifyHeight();
+  }
+
+  function notifyHeight(){
+    try {
+      if (window.openai && typeof window.openai.notifyIntrinsicHeight === "function"){
+        window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+      }
+    } catch (e) {}
+  }
+
+  function wire(){
+    var by = function(id){ return document.getElementById(id); };
+    var start = by("start");
+    if (start) start.onclick = function(){
+      logClick("click_open");
+      failReason = ""; assetErrors = [];
+      mode = "real"; realState = "loading";
+      mountReal();
+    };
+    var openfull = by("openfull");
+    if (openfull) openfull.onclick = function(){ logClick("click_open_player"); openExternal(playUrl()); };
+    var dl = by("dl");
+    if (dl) dl.onclick = function(){ logClick("click_download"); openExternal(downloadUrl()); };
+    var h5pcom = by("h5pcom");
+    if (h5pcom) h5pcom.onclick = function(){
+      var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
+      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
+    };
+  }
+
+  function setData(o){
+    var prevToken = data && data.token;
+    data = o || {};
+    if (h5pNode && data.token !== prevToken){
+      h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
+      if (mode === "real" || mode === "failed") mode = "idle";
+    }
+    render();
+    warmRuntime();
+  }
+
+  function boot(){
+    window.addEventListener("error", function(e){
+      var t = e && e.target;
+      if (t && (t.tagName === "SCRIPT" || t.tagName === "LINK")) assetErrors.push(String(t.src || t.href || "?"));
+    }, true);
+    if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
+    window.addEventListener("openai:set_globals", function(){
+      if (window.openai && window.openai.toolOutput) setData(window.openai.toolOutput);
+    });
+    try {
+      if (typeof ResizeObserver !== "undefined"){
+        new ResizeObserver(function(){ notifyHeight(); }).observe(document.body);
+      }
+    } catch (e) {}
+  }
+  boot();
+})();
+</script>
+</body>
+</html>`;
+}

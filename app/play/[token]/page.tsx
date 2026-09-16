@@ -4,14 +4,30 @@ import H5pPlayer from "@/components/H5pPlayer";
 
 export const runtime = "nodejs";
 
+const KIND_LABEL: Record<string, string> = {
+  quiz: "H5P quiz",
+  book: "H5P interactive book",
+  video: "H5P interactive video",
+};
+
+function metaLine(cs: ReturnType<typeof decodeSpec>): string {
+  if (cs.kind === "quiz") {
+    return `${cs.spec.questions.length} questions · pass ${cs.spec.passPercentage}%`;
+  }
+  if (cs.kind === "book") {
+    return `${cs.spec.chapters.length} chapter${cs.spec.chapters.length === 1 ? "" : "s"}`;
+  }
+  return `${cs.spec.timeline.length} interaction${cs.spec.timeline.length === 1 ? "" : "s"}`;
+}
+
 export async function generateMetadata(
   { params }: { params: Promise<{ token: string }> },
 ): Promise<Metadata> {
   try {
-    const spec = decodeSpec((await params).token);
-    return { title: `${spec.title} — H5P quiz` };
+    const cs = decodeSpec((await params).token);
+    return { title: `${cs.spec.title} — ${KIND_LABEL[cs.kind]}` };
   } catch {
-    return { title: "H5P quiz" };
+    return { title: "H5P activity" };
   }
 }
 
@@ -26,18 +42,16 @@ export default async function PlayPage({
   const embed = "embed" in (await searchParams);
 
   let title: string | null = null;
-  let questionCount = 0;
-  let passPercentage = 60;
+  let meta = "";
   try {
-    const spec = decodeSpec(token);
-    title = spec.title;
-    questionCount = spec.questions.length;
-    passPercentage = spec.passPercentage;
+    const cs = decodeSpec(token);
+    title = cs.spec.title;
+    meta = metaLine(cs);
   } catch {
     return (
       <div className="wrap">
-        <h1>Quiz link not valid</h1>
-        <p className="muted">This link is malformed or truncated. Generate the quiz again.</p>
+        <h1>Link not valid</h1>
+        <p className="muted">This link is malformed or truncated. Generate the activity again.</p>
       </div>
     );
   }
@@ -55,7 +69,7 @@ export default async function PlayPage({
     <div className="wrap" style={{ maxWidth: 820 }}>
       <div style={{ marginBottom: 12 }}>
         <strong>{title}</strong>{" "}
-        <span className="muted">· {questionCount} questions · pass {passPercentage}%</span>
+        <span className="muted">· {meta}</span>
       </div>
       <div className="panel" style={{ padding: 12 }}>
         <H5pPlayer playerPath={`/api/h5p/${token}/player`} />

@@ -1,8 +1,7 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import JSZip from "jszip";
-import { validateQuiz, type QuizSpec } from "./quizSpec";
+import { validateQuiz, type Answer, type QuizSpec } from "./quizSpec";
+import { loadVendorFiles, folderNamesFor } from "./vendor";
 
 /**
  * Turn a QuizSpec into a valid, self-contained .h5p package (H5P Question Set
@@ -18,9 +17,7 @@ import { validateQuiz, type QuizSpec } from "./quizSpec";
  * Lumi and h5p.com.
  */
 
-const VENDOR_ZIP = path.join(process.cwd(), "lib", "h5p", "vendor", "h5p-libraries.zip");
-
-// Machine name + version of every runtime library bundled in vendor/h5p-libraries.zip.
+// Machine name + version of every runtime library the quiz (Question Set) needs.
 const PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.QuestionSet", majorVersion: 1, minorVersion: 20 },
   { machineName: "H5P.MultiChoice", majorVersion: 1, minorVersion: 16 },
@@ -31,8 +28,9 @@ const PRELOADED_DEPENDENCIES = [
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Video", majorVersion: 1, minorVersion: 6 },
 ];
+export const QUIZ_VENDOR_FOLDERS = folderNamesFor(PRELOADED_DEPENDENCIES);
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -57,20 +55,20 @@ const MULTICHOICE_UI = {
   submitAnswerButton: "Submit",
 };
 
-const CONFIRM_CHECK = {
+export const CONFIRM_CHECK = {
   header: "Finish ?",
   body: "Are you sure you wish to finish ?",
   cancelLabel: "Cancel",
   confirmLabel: "Finish",
 };
-const CONFIRM_RETRY = {
+export const CONFIRM_RETRY = {
   header: "Retry ?",
   body: "Are you sure you wish to retry ?",
   cancelLabel: "Cancel",
   confirmLabel: "Confirm",
 };
 
-function multiChoiceQuestion(q: QuizSpec["questions"][number]) {
+export function multiChoiceQuestion(q: { question: string; answers: Answer[] }) {
   return {
     library: "H5P.MultiChoice 1.16",
     subContentId: randomUUID(),
@@ -191,25 +189,10 @@ function slugify(s: string): string {
   );
 }
 
-// The vendored library files, extracted once per process.
-let vendorFilesCache: Map<string, Buffer> | null = null;
-async function loadVendorFiles(): Promise<Map<string, Buffer>> {
-  if (vendorFilesCache) return vendorFilesCache;
-  const zip = await JSZip.loadAsync(await readFile(VENDOR_ZIP));
-  const files = new Map<string, Buffer>();
-  await Promise.all(
-    Object.values(zip.files).map(async (f) => {
-      if (!f.dir) files.set(f.name, await f.async("nodebuffer"));
-    }),
-  );
-  vendorFilesCache = files;
-  return files;
-}
-
 /** The full set of files that make up the .h5p, unpacked. */
 export async function buildQuizFiles(rawSpec: QuizSpec): Promise<BuiltFiles> {
   const spec = validateQuiz(rawSpec);
-  const files = new Map(await loadVendorFiles());
+  const files = new Map(await loadVendorFiles(QUIZ_VENDOR_FOLDERS));
   files.set("h5p.json", Buffer.from(JSON.stringify(buildH5pJson(spec)), "utf8"));
   files.set(
     "content/content.json",

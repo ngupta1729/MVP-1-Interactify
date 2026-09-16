@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "h5p:libraries": "node scripts/fetch-h5p-libraries.mjs",
-    "h5p:smoke": "node scripts/smoke-build-h5p.mjs"
+    "h5p:smoke": "tsx scripts/smoke-build-h5p.mjs",
+    "h5p:smoke:book": "tsx scripts/smoke-build-book.mjs",
+    "h5p:smoke:video": "tsx scripts/smoke-build-video.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

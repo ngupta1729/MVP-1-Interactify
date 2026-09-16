@@ -23,4 +23,7 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
+# Local-only scratch (screenshots, analysis inputs) — never commit
+scratch/
+
 .env*

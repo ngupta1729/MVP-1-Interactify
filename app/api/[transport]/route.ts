@@ -1,14 +1,32 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { quizSpecShape, quizSpecSchema } from "@/lib/h5p/quizSpec";
+import { bookSpecShape, bookSpecSchema } from "@/lib/h5p/bookSpec";
+import { videoSpecShape, videoSpecSchema } from "@/lib/h5p/videoSpec";
 import { encodeSpec, decodeSpec, warmCache } from "@/lib/h5p/pack";
 import { buildQuizFiles } from "@/lib/h5p/buildQuiz";
+import { buildBookFiles } from "@/lib/h5p/buildBook";
+import { buildVideoFiles } from "@/lib/h5p/buildVideo";
 import { classifyRefinement } from "@/lib/h5p/diffQuiz";
 import { QUIZ_WIDGET_HTML } from "@/lib/h5p/widget";
+import { buildPlayerWidgetHtml } from "@/lib/h5p/genericPlayerWidget";
 import { baseUrl } from "@/lib/baseUrl";
 import { getDb } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { deriveAnonUid } from "@/lib/db/anon";
+
+const BOOK_WIDGET_HTML = buildPlayerWidgetHtml({
+  kind: "book",
+  label: "book",
+  metaLabel: "H5P Interactive Book",
+  successSelectors: ".h5p-interactive-book, .h5p-column, .h5p-book-chapter",
+});
+const VIDEO_WIDGET_HTML = buildPlayerWidgetHtml({
+  kind: "video",
+  label: "video",
+  metaLabel: "H5P Interactive Video",
+  successSelectors: ".h5p-interactive-video, .h5p-video-wrapper",
+});
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,6 +59,8 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v21.html",
   "ui://widget/quiz-v22.html",
 ];
+const BOOK_WIDGET_URI = "ui://widget/book-v1.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v1.html";
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
@@ -78,6 +98,28 @@ const handler = createMcpHandler(
             text: QUIZ_WIDGET_HTML,
             _meta: WIDGET_CSP,
           },
+        ],
+      }),
+    );
+
+    server.registerResource(
+      "book-widget",
+      BOOK_WIDGET_URI,
+      { title: "H5P book preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+      async () => ({
+        contents: [
+          { uri: BOOK_WIDGET_URI, mimeType: "text/html+skybridge", text: BOOK_WIDGET_HTML, _meta: WIDGET_CSP },
+        ],
+      }),
+    );
+
+    server.registerResource(
+      "video-widget",
+      VIDEO_WIDGET_URI,
+      { title: "H5P video preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+      async () => ({
+        contents: [
+          { uri: VIDEO_WIDGET_URI, mimeType: "text/html+skybridge", text: VIDEO_WIDGET_HTML, _meta: WIDGET_CSP },
         ],
       }),
     );
@@ -155,7 +197,7 @@ const handler = createMcpHandler(
         const spec = quizSpecSchema.parse(quizArgs);
         // Build the file set here so bad input fails loudly inside the tool call.
         const built = await buildQuizFiles(spec);
-        const token = encodeSpec(spec);
+        const token = encodeSpec({ kind: "quiz", spec });
         // The player route (hit the instant "Take the quiz" is clicked) reads
         // this same cache by token - prime it now with the package we just
         // built, instead of making that first click rebuild it cold.
@@ -170,8 +212,8 @@ const handler = createMcpHandler(
         // Best-effort: never let this logging fail the actual tool call.
         try {
           if (typeof previousToken === "string" && previousToken) {
-            const prevSpec = decodeSpec(previousToken);
-            const kinds = classifyRefinement(prevSpec, spec);
+            const prev = decodeSpec(previousToken);
+            const kinds = prev.kind === "quiz" ? classifyRefinement(prev.spec, spec) : ["other" as const];
             await getDb()
               .insert(events)
               .values({
@@ -260,6 +302,233 @@ const handler = createMcpHandler(
           ],
           structuredContent: structured,
           _meta: { "openai/outputTemplate": WIDGET_URI },
+        };
+      },
+    );
+
+    const bookToolInputShape = {
+      ...bookSpecShape,
+      previousToken: z
+        .string()
+        .optional()
+        .describe(
+          "If this is a refinement of a book you generated earlier with this tool, pass back " +
+            "that book's token (the id segment of its downloadUrl/playUrl/token field) so we " +
+            "can tell what changed.",
+        ),
+      refinementNote: z
+        .string()
+        .max(300)
+        .optional()
+        .describe("If this is a refinement, briefly say what changed and why."),
+    };
+
+    server.registerTool(
+      "create_h5p_book",
+      {
+        title: "Create an H5P interactive book",
+        description:
+          "Turn a book, article, or set of notes into an interactive H5P Interactive Book " +
+          "(chapters of text with embedded checkpoint questions) and return a downloadable " +
+          ".h5p file. You (the model) write the chapter headings and body paragraphs from the " +
+          "user's content, and add an optional checkpoint question (multiple-choice or " +
+          "true/false) to chapters where a check-in makes sense. If the user hasn't said how " +
+          "often they want checkpoint questions, ask them first rather than guessing - reflect " +
+          "their answer in `checkpointFrequency` and in which chapters actually carry a " +
+          "`checkpoint`. Text only for now - no images. To refine, call again with the updated " +
+          "chapters, passing `previousToken` and a short `refinementNote`.\n\n" +
+          "This renders as an inline card with its own working buttons (Open the book, " +
+          "Download, Open in h5p.com) - your reply should NOT restate or re-link to anything " +
+          "the card already has a button for. Keep your reply to a short description of what " +
+          "you built.\n\n" +
+          "If the content touches facts that could be time-sensitive or easy to get wrong, " +
+          "verify them against a reliable source before finalizing, and briefly say what you " +
+          "checked them against.",
+        inputSchema: bookToolInputShape as unknown as z.ZodRawShape,
+        _meta: {
+          "openai/outputTemplate": BOOK_WIDGET_URI,
+          "openai/toolInvocation/invoking": "Building your H5P book…",
+          "openai/toolInvocation/invoked": "Your H5P book is ready",
+        },
+      },
+      async (args, extra) => {
+        const { previousToken, refinementNote, ...bookArgs } = args as Record<string, unknown>;
+        const spec = bookSpecSchema.parse(bookArgs);
+        const built = await buildBookFiles(spec);
+        const token = encodeSpec({ kind: "book", spec });
+        warmCache(token, built);
+        const base = baseUrl();
+        const downloadUrl = `${base}/api/h5p/${token}`;
+        const playUrl = `${base}/play/${token}`;
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+
+        try {
+          if (typeof previousToken === "string" && previousToken) {
+            await getDb()
+              .insert(events)
+              .values({
+                quizToken: token,
+                eventType: "refinement",
+                anonUid,
+                detail: JSON.stringify({
+                  previousToken,
+                  refinementNote: typeof refinementNote === "string" ? refinementNote : null,
+                }),
+              });
+          } else {
+            await getDb().insert(events).values({ quizToken: token, eventType: "generate", anonUid });
+          }
+        } catch (err) {
+          console.error("create_h5p_book: failed to log usage", err);
+        }
+
+        const chapterCount = spec.chapters.length;
+        const checkpointCount = spec.chapters.filter((c) => c.checkpoint).length;
+        const structured = {
+          title: spec.title,
+          meta: `${chapterCount} chapter${chapterCount === 1 ? "" : "s"}`,
+          chapterCount,
+          checkpointCount,
+          token,
+          appOrigin: base,
+          filename: built.filename,
+          anonUid,
+        };
+
+        const uiResource = {
+          type: "resource" as const,
+          resource: {
+            uri: `ui://h5p-book/${token}`,
+            mimeType: "text/html",
+            text:
+              `<!doctype html><html><head><meta charset="utf-8">` +
+              `<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100vh;display:block}</style>` +
+              `</head><body><iframe src="${playUrl}" allowfullscreen></iframe></body></html>`,
+          },
+        };
+
+        const summary =
+          `Built "${spec.title}" - ${chapterCount} chapter${chapterCount === 1 ? "" : "s"}` +
+          (checkpointCount ? `, ${checkpointCount} with a checkpoint question` : "") + `.`;
+        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
+        const text = anonUid
+          ? summary
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
+            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
+
+        return {
+          content: [{ type: "text", text }, uiResource],
+          structuredContent: structured,
+          _meta: { "openai/outputTemplate": BOOK_WIDGET_URI },
+        };
+      },
+    );
+
+    const videoToolInputShape = {
+      ...videoSpecShape,
+      previousToken: z
+        .string()
+        .optional()
+        .describe(
+          "If this is a refinement of a video you generated earlier with this tool, pass back " +
+            "that video's token so we can tell what changed.",
+        ),
+      refinementNote: z
+        .string()
+        .max(300)
+        .optional()
+        .describe("If this is a refinement, briefly say what changed and why."),
+    };
+
+    server.registerTool(
+      "create_h5p_interactive_video",
+      {
+        title: "Create an H5P interactive video",
+        description:
+          "Turn a YouTube video into an H5P Interactive Video with timed text notes and/or " +
+          "checkpoint questions, and return a downloadable .h5p file. Requires a real " +
+          "youtube.com or youtu.be URL from the user - never invent one. You (the model) " +
+          "build the `timeline` (text notes and/or multiple-choice/true-false questions at " +
+          "specific timestamps) from what the user tells you the video covers. If the user " +
+          "hasn't said how many interactions they want, ask first rather than guessing, and " +
+          "reflect their answer in `interactionDensity`. To refine, call again with the " +
+          "updated timeline, passing `previousToken` and a short `refinementNote`.\n\n" +
+          "This renders as an inline card with its own working buttons (Watch the video, " +
+          "Download, Open in h5p.com) - your reply should NOT restate or re-link to anything " +
+          "the card already has a button for. Keep your reply to a short description of what " +
+          "you built.",
+        inputSchema: videoToolInputShape as unknown as z.ZodRawShape,
+        _meta: {
+          "openai/outputTemplate": VIDEO_WIDGET_URI,
+          "openai/toolInvocation/invoking": "Building your H5P interactive video…",
+          "openai/toolInvocation/invoked": "Your H5P interactive video is ready",
+        },
+      },
+      async (args, extra) => {
+        const { previousToken, refinementNote, ...videoArgs } = args as Record<string, unknown>;
+        const spec = videoSpecSchema.parse(videoArgs);
+        const built = await buildVideoFiles(spec);
+        const token = encodeSpec({ kind: "video", spec });
+        warmCache(token, built);
+        const base = baseUrl();
+        const downloadUrl = `${base}/api/h5p/${token}`;
+        const playUrl = `${base}/play/${token}`;
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+
+        try {
+          if (typeof previousToken === "string" && previousToken) {
+            await getDb()
+              .insert(events)
+              .values({
+                quizToken: token,
+                eventType: "refinement",
+                anonUid,
+                detail: JSON.stringify({
+                  previousToken,
+                  refinementNote: typeof refinementNote === "string" ? refinementNote : null,
+                }),
+              });
+          } else {
+            await getDb().insert(events).values({ quizToken: token, eventType: "generate", anonUid });
+          }
+        } catch (err) {
+          console.error("create_h5p_interactive_video: failed to log usage", err);
+        }
+
+        const interactionCount = spec.timeline.length;
+        const structured = {
+          title: spec.title,
+          meta: `${interactionCount} interaction${interactionCount === 1 ? "" : "s"}`,
+          interactionCount,
+          token,
+          appOrigin: base,
+          filename: built.filename,
+          anonUid,
+        };
+
+        const uiResource = {
+          type: "resource" as const,
+          resource: {
+            uri: `ui://h5p-video/${token}`,
+            mimeType: "text/html",
+            text:
+              `<!doctype html><html><head><meta charset="utf-8">` +
+              `<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100vh;display:block}</style>` +
+              `</head><body><iframe src="${playUrl}" allowfullscreen></iframe></body></html>`,
+          },
+        };
+
+        const summary = `Built "${spec.title}" - ${interactionCount} interaction${interactionCount === 1 ? "" : "s"}.`;
+        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
+        const text = anonUid
+          ? summary
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
+            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
+
+        return {
+          content: [{ type: "text", text }, uiResource],
+          structuredContent: structured,
+          _meta: { "openai/outputTemplate": VIDEO_WIDGET_URI },
         };
       },
     );
