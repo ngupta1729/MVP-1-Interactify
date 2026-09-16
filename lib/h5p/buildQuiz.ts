@@ -204,7 +204,12 @@ export async function buildQuizFiles(rawSpec: QuizSpec): Promise<BuiltFiles> {
 /** Zip a set of unpacked files into a .h5p buffer. */
 export async function packFiles(files: Map<string, Buffer>): Promise<Buffer> {
   const zip = new JSZip();
-  for (const [name, data] of files) zip.file(name, data);
+  // createFolders defaults to true, which makes JSZip auto-add a directory
+  // entry (e.g. "content/") for any nested path - disabled here since some
+  // H5P validators (confirmed: ChatGPT's own file-type check) reject any
+  // zip entry that isn't a real file with an allowed extension, and a bare
+  // directory entry has neither.
+  for (const [name, data] of files) zip.file(name, data, { createFolders: false });
   return zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",

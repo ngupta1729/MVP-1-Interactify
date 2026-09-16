@@ -85,6 +85,7 @@ const CLICK_EVENT_TYPES = new Set([
   "click_open_player",
   "click_reuse",
   "click_logo",
+  "click_open", // Book/Video widget's "Open the book/video" button (genericPlayerWidget.ts)
 ]);
 
 export async function POST(req: Request) {

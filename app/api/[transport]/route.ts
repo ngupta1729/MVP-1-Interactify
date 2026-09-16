@@ -26,6 +26,10 @@ const VIDEO_WIDGET_HTML = buildPlayerWidgetHtml({
   label: "video",
   metaLabel: "H5P Interactive Video",
   successSelectors: ".h5p-interactive-video, .h5p-video-wrapper",
+  // ChatGPT's widget CSP cannot be extended to allow youtube.com's iframe_api
+  // script (confirmed live: it's a fixed platform allowlist) - the YouTube
+  // player can never load inline here, so don't try. See genericPlayerWidget.ts.
+  supportsInlineMount: false,
 });
 
 export const runtime = "nodejs";
@@ -59,15 +63,21 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v21.html",
   "ui://widget/quiz-v22.html",
 ];
-const BOOK_WIDGET_URI = "ui://widget/book-v1.html";
-const VIDEO_WIDGET_URI = "ui://widget/video-v1.html";
+// Bump the version segment whenever BOOK_WIDGET_HTML/VIDEO_WIDGET_HTML change —
+// same reasoning as the quiz widget's WIDGET_URI above. ChatGPT caches component
+// templates by URI, not by content, so an unchanged URI serves stale HTML even
+// after this server has been redeployed with new widget code.
+const BOOK_WIDGET_URI = "ui://widget/book-v2.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v2.html";
+const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html"];
+const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
 // origin even when "Enforce CSP in developer mode" is on. resource_domains covers
 // script-src (h5p-standalone bundles + library JS/CSS); connect_domains covers the
-// content.json fetch. We render H5P with embedType "div" so no nested iframe is
-// needed — frame_domains stays empty. Declared in both the legacy snake_case key
+// content.json fetch. Quiz/Book render with embedType "div" and no nested iframe,
+// so frame_domains stays empty for them. Declared in both the legacy snake_case key
 // and the newer _meta.ui.csp shape.
 const CSP_DOMAINS = { connect: [APP_ORIGIN], resource: [APP_ORIGIN] };
 const WIDGET_CSP = {
@@ -79,6 +89,26 @@ const WIDGET_CSP = {
     csp: {
       connectDomains: CSP_DOMAINS.connect,
       resourceDomains: CSP_DOMAINS.resource,
+    },
+  },
+};
+
+// H5P.InteractiveVideo embeds a real YouTube player, which is itself a nested
+// iframe from youtube.com - the only one of our 3 content types that needs a
+// frame permission at all. Without this, the YouTube embed has no CSP grant to
+// load in, and the video area renders blank.
+const YOUTUBE_FRAME_DOMAINS = ["https://www.youtube.com", "https://www.youtube-nocookie.com"];
+const VIDEO_WIDGET_CSP = {
+  "openai/widgetCSP": {
+    connect_domains: CSP_DOMAINS.connect,
+    resource_domains: CSP_DOMAINS.resource,
+    frame_domains: YOUTUBE_FRAME_DOMAINS,
+  },
+  ui: {
+    csp: {
+      connectDomains: CSP_DOMAINS.connect,
+      resourceDomains: CSP_DOMAINS.resource,
+      frameDomains: YOUTUBE_FRAME_DOMAINS,
     },
   },
 };
@@ -116,10 +146,10 @@ const handler = createMcpHandler(
     server.registerResource(
       "video-widget",
       VIDEO_WIDGET_URI,
-      { title: "H5P video preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+      { title: "H5P video preview", mimeType: "text/html+skybridge", _meta: VIDEO_WIDGET_CSP },
       async () => ({
         contents: [
-          { uri: VIDEO_WIDGET_URI, mimeType: "text/html+skybridge", text: VIDEO_WIDGET_HTML, _meta: WIDGET_CSP },
+          { uri: VIDEO_WIDGET_URI, mimeType: "text/html+skybridge", text: VIDEO_WIDGET_HTML, _meta: VIDEO_WIDGET_CSP },
         ],
       }),
     );
@@ -134,6 +164,32 @@ const handler = createMcpHandler(
         async () => ({
           contents: [
             { uri, mimeType: "text/html+skybridge", text: QUIZ_WIDGET_HTML, _meta: WIDGET_CSP },
+          ],
+        }),
+      );
+    });
+
+    LEGACY_BOOK_WIDGET_URIS.forEach((uri, i) => {
+      server.registerResource(
+        `book-widget-legacy-${i}`,
+        uri,
+        { title: "H5P book preview", mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+        async () => ({
+          contents: [
+            { uri, mimeType: "text/html+skybridge", text: BOOK_WIDGET_HTML, _meta: WIDGET_CSP },
+          ],
+        }),
+      );
+    });
+
+    LEGACY_VIDEO_WIDGET_URIS.forEach((uri, i) => {
+      server.registerResource(
+        `video-widget-legacy-${i}`,
+        uri,
+        { title: "H5P video preview", mimeType: "text/html+skybridge", _meta: VIDEO_WIDGET_CSP },
+        async () => ({
+          contents: [
+            { uri, mimeType: "text/html+skybridge", text: VIDEO_WIDGET_HTML, _meta: VIDEO_WIDGET_CSP },
           ],
         }),
       );
@@ -184,7 +240,12 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong " +
           "(dates, current events, statistics, named entities), verify them against a " +
           "reliable source before finalizing the questions, and briefly say what you checked " +
-          "them against.",
+          "them against.\n\n" +
+          "If it's genuinely unclear whether the user has specific source material (notes, a " +
+          "document, a pasted article) they want the quiz based on, versus being fine with a " +
+          "general-knowledge example on a topic, ask them briefly before generating. Don't ask " +
+          "if their message already makes this clear either way (e.g. they already pasted " +
+          "content, attached a file, or explicitly asked for a generic/example quiz).",
         inputSchema: toolInputShape as unknown as z.ZodRawShape,
         _meta: {
           "openai/outputTemplate": WIDGET_URI,
@@ -343,7 +404,12 @@ const handler = createMcpHandler(
           "you built.\n\n" +
           "If the content touches facts that could be time-sensitive or easy to get wrong, " +
           "verify them against a reliable source before finalizing, and briefly say what you " +
-          "checked them against.",
+          "checked them against.\n\n" +
+          "If it's genuinely unclear whether the user has specific source material (notes, a " +
+          "document, a pasted article) they want the book based on, versus being fine with a " +
+          "general-knowledge example on a topic, ask them briefly before generating. Don't ask " +
+          "if their message already makes this clear either way (e.g. they already pasted " +
+          "content, attached a file, or explicitly asked for a generic/example book).",
         inputSchema: bookToolInputShape as unknown as z.ZodRawShape,
         _meta: {
           "openai/outputTemplate": BOOK_WIDGET_URI,
@@ -449,14 +515,20 @@ const handler = createMcpHandler(
           "checkpoint questions, and return a downloadable .h5p file. Requires a real " +
           "youtube.com or youtu.be URL from the user - never invent one. You (the model) " +
           "build the `timeline` (text notes and/or multiple-choice/true-false questions at " +
-          "specific timestamps) from what the user tells you the video covers. If the user " +
-          "hasn't said how many interactions they want, ask first rather than guessing, and " +
+          "specific timestamps) from what the video actually covers. If the user hasn't " +
+          "said how many interactions they want, ask first rather than guessing, and " +
           "reflect their answer in `interactionDensity`. To refine, call again with the " +
           "updated timeline, passing `previousToken` and a short `refinementNote`.\n\n" +
           "This renders as an inline card with its own working buttons (Watch the video, " +
           "Download, Open in h5p.com) - your reply should NOT restate or re-link to anything " +
           "the card already has a button for. Keep your reply to a short description of what " +
-          "you built.",
+          "you built.\n\n" +
+          "Before asking the user what the video covers, check whether you have a way to " +
+          "find out yourself (e.g. a code execution or browsing tool that can fetch the " +
+          "video's transcript or metadata, such as yt-dlp) and use that first - it's faster " +
+          "and more accurate than asking, and timestamps line up better against a real " +
+          "transcript. Only ask the user directly if no such tool is available to you, or it " +
+          "fails. Don't ask if they've already described the content themselves.",
         inputSchema: videoToolInputShape as unknown as z.ZodRawShape,
         _meta: {
           "openai/outputTemplate": VIDEO_WIDGET_URI,

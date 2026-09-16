@@ -3,18 +3,30 @@
  * Video): mounts the REAL H5P runtime (h5p-standalone, embedType "div") the
  * same way QUIZ_WIDGET_HTML does. Unlike the quiz widget, this has no
  * bespoke JS-lookalike fallback or answer-key view — those are irreducibly
- * quiz-shaped. On failure it falls back to a plain "open the full player"
- * link instead.
+ * quiz-shaped. On failure it falls back to just the Download button - there
+ * is no full-page player fallback (/play/[token] is a download/metadata
+ * page only, deliberately not an H5P host - see that page's own comment).
  */
 export interface PlayerWidgetOptions {
   kind: "book" | "video";
   label: string; // "book" | "video" — used in button/status text
   metaLabel: string; // e.g. "H5P Interactive Book" / "H5P Interactive Video"
   successSelectors: string; // CSS selectors that indicate the real player actually rendered
+  /**
+   * False for Video: H5P.InteractiveVideo needs to load a real YouTube
+   * player, itself a third-party script (youtube.com/iframe_api) that
+   * ChatGPT's widget CSP does not and cannot be made to allow (confirmed via
+   * live console: it's a fixed platform allowlist, not something our own
+   * resource/frame domain declarations can extend to an arbitrary
+   * third-party host). Attempting the inline mount there always fails after
+   * a real delay, so skip straight to the download-first state instead.
+   */
+  supportsInlineMount?: boolean;
 }
 
 export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   const { label, metaLabel, successSelectors } = opts;
+  const supportsInlineMount = opts.supportsInlineMount !== false;
   const Label = label.charAt(0).toUpperCase() + label.slice(1);
 
   return /* html */ `<!doctype html>
@@ -58,7 +70,8 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v1";
+  var WIDGET_VERSION = "v2";
+  var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
   var realState = "idle"; // idle | loading | ok | failed
@@ -67,7 +80,6 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   var h5pNode = null;
 
   function assetOrigin(){ return data.appOrigin || ""; }
-  function playUrl(){ return (data.appOrigin || "") + "/play/" + (data.token || ""); }
   function downloadUrl(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || ""); }
   function playerBase(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || "") + "/player"; }
 
@@ -182,13 +194,18 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     }
     if (mode === "failed"){
       return '<details class="fallback-note" open>' +
-          '<summary>Could not mount the interactive ${label} inline &mdash; open the full player instead.</summary>' +
+          '<summary>Could not mount the interactive ${label} inline &mdash; download it below to open it directly.</summary>' +
           '<div class="why">' + esc(failReason) + '</div>' +
         '</details>' +
         '<div class="foot">' +
-          '<button class="btn" id="openfull">Open the ${Label} \\u2197</button>' +
           actionBtns() +
         '</div>';
+    }
+    if (!SUPPORTS_INLINE_MOUNT){
+      return '<p class="fallback-note">This ${label} can\\u2019t play inline here \\u2014 ' +
+          'ChatGPT\\u2019s card doesn\\u2019t allow loading the video player it needs. ' +
+          'Download it below, or open it in h5p.com to watch it directly.</p>' +
+        '<div class="foot">' + actionBtns() + '</div>';
     }
     return '<div class="foot">' +
       '<button class="btn" id="start">\\u25b6 Open the ${label}</button>' +
@@ -244,8 +261,6 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
       mode = "real"; realState = "loading";
       mountReal();
     };
-    var openfull = by("openfull");
-    if (openfull) openfull.onclick = function(){ logClick("click_open_player"); openExternal(playUrl()); };
     var dl = by("dl");
     if (dl) dl.onclick = function(){ logClick("click_download"); openExternal(downloadUrl()); };
     var h5pcom = by("h5pcom");
