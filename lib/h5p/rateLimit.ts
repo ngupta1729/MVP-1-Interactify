@@ -36,23 +36,33 @@ export async function checkGenerationRateLimit(anonUid: string | null): Promise<
     return { allowed: true, count: 0, limit: MAX_GENERATIONS_PER_WINDOW, windowMinutes: WINDOW_MINUTES };
   }
 
-  const since = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000);
-  const [row] = await getDb()
-    .select({ count: sql<number>`count(*)::int` })
-    .from(events)
-    .where(
-      and(
-        eq(events.anonUid, anonUid),
-        inArray(events.eventType, ["generate", "refinement"]),
-        gte(events.createdAt, since),
-      ),
-    );
+  // Fails OPEN, not closed: if the DB is unreachable (e.g. a suspended Neon
+  // project past its free-tier cap), generation should still work - the same
+  // "never let a DB hiccup block the educator" rule every other DB call in
+  // this app follows. Worst case here is a burst goes uncounted, which is far
+  // better than the app going down the moment analytics/rate-limiting breaks.
+  try {
+    const since = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000);
+    const [row] = await getDb()
+      .select({ count: sql<number>`count(*)::int` })
+      .from(events)
+      .where(
+        and(
+          eq(events.anonUid, anonUid),
+          inArray(events.eventType, ["generate", "refinement"]),
+          gte(events.createdAt, since),
+        ),
+      );
 
-  const count = row?.count ?? 0;
-  return {
-    allowed: count < MAX_GENERATIONS_PER_WINDOW,
-    count,
-    limit: MAX_GENERATIONS_PER_WINDOW,
-    windowMinutes: WINDOW_MINUTES,
-  };
+    const count = row?.count ?? 0;
+    return {
+      allowed: count < MAX_GENERATIONS_PER_WINDOW,
+      count,
+      limit: MAX_GENERATIONS_PER_WINDOW,
+      windowMinutes: WINDOW_MINUTES,
+    };
+  } catch (err) {
+    console.error("checkGenerationRateLimit: DB unreachable, failing open", err);
+    return { allowed: true, count: 0, limit: MAX_GENERATIONS_PER_WINDOW, windowMinutes: WINDOW_MINUTES };
+  }
 }
