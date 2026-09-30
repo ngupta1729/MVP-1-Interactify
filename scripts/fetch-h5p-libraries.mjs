@@ -10,18 +10,21 @@
  * small and per-content-type builders filter to just what they need via
  * loadVendorFiles()), then write it out.
  *
+ * Also records each source's ETag to h5p-libraries.meta.json - the baseline
+ * that scripts/check-h5p-updates.mjs compares future HEAD requests against,
+ * so we get a signal when the Hub publishes a new content-type version
+ * without having to re-download and diff the bundles ourselves.
+ *
  *   node scripts/fetch-h5p-libraries.mjs
  */
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
+import { HUB_SOURCES } from "../lib/h5p/checkHubUpdates.ts";
 
-const SOURCES = [
-  "https://api.h5p.org/v1/content-types/H5P.QuestionSet",
-  "https://api.h5p.org/v1/content-types/H5P.InteractiveBook",
-  "https://api.h5p.org/v1/content-types/H5P.InteractiveVideo",
-];
+const SOURCES = HUB_SOURCES;
 const OUT = path.join("lib", "h5p", "vendor", "h5p-libraries.zip");
+const META_OUT = path.join("lib", "h5p", "vendor", "h5p-libraries.meta.json");
 
 const KEEP = [
   // Quiz (H5P.QuestionSet)
@@ -49,11 +52,13 @@ const KEEP = [
 
 const out = new JSZip();
 const seenTop = new Set();
+const meta = {};
 let files = 0;
 
 for (const source of SOURCES) {
   const res = await fetch(source, { headers: { "User-Agent": "h5p-chatgpt-app/0.1" } });
   if (!res.ok) throw new Error(`Hub download failed (${source}): ${res.status} ${res.statusText}`);
+  meta[source] = { etag: res.headers.get("etag"), lastModified: res.headers.get("last-modified") };
   const srcZip = await JSZip.loadAsync(Buffer.from(await res.arrayBuffer()));
 
   for (const entry of Object.values(srcZip.files)) {
@@ -73,4 +78,6 @@ if (missing.length) throw new Error(`Hub bundles missing expected libraries: ${m
 await mkdir(path.dirname(OUT), { recursive: true });
 const buf = await out.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 } });
 await writeFile(OUT, buf);
+await writeFile(META_OUT, JSON.stringify({ fetchedAt: new Date().toISOString(), sources: meta }, null, 2));
 console.log(`Wrote ${OUT} - ${files} files, ${(buf.length / 1024 / 1024).toFixed(2)} MB, libraries: ${[...seenTop].sort().join(", ")}`);
+console.log(`Wrote ${META_OUT} - baseline ETags for ${Object.keys(meta).length} sources`);
