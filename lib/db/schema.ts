@@ -62,7 +62,11 @@ export const surveyResponses = pgTable(
     quizToken: text("quiz_token").notNull(),
     anonUid: text("anon_uid"),
     happiness: text("happiness").notNull(), // 'happy' | 'okay' | 'not_happy'
-    destination: text("destination").notNull(), // 'lms' | 'own_site' | 'shared_direct' | 'not_sure' | 'other'
+    // No longer collected (dropped from the survey UI - the happiness rating
+    // plus optional free text covers this now) but kept nullable rather than
+    // removed, so the destination data already gathered from earlier
+    // responses isn't lost.
+    destination: text("destination"), // 'lms' | 'own_site' | 'shared_direct' | 'not_sure' | 'other' | null
     improvementText: text("improvement_text"), // optional free text, never required
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

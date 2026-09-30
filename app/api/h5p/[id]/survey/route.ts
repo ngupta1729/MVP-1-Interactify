@@ -30,14 +30,17 @@ export async function OPTIONS() {
  * every call after the first just updates that same row to the latest
  * answer, rather than accumulating duplicates.
  *
- * Deliberately NOT about content quality: happiness (holistic), destination
- * (where the educator intends to use it — direct market signal for MVP 3+
- * platform prioritization), and an optional free-text improvement note.
+ * Deliberately NOT about content quality: a holistic happiness rating plus
+ * an optional free-text note. `destination` used to also be asked here
+ * (where the educator intends to use it) but was dropped from the survey UI -
+ * still accepted if sent (nothing currently sends it) so old widget builds
+ * cached in an open chat don't break, and so the historical destination data
+ * already collected isn't orphaned from the schema.
  */
 const surveyBody = z.object({
   anonUid: z.string().optional().nullable(),
   happiness: z.enum(["happy", "okay", "not_happy"]),
-  destination: z.enum(["lms", "own_site", "shared_direct", "not_sure", "other"]),
+  destination: z.enum(["lms", "own_site", "shared_direct", "not_sure", "other"]).optional(),
   improvementText: z.string().max(1000).optional(),
 });
 
@@ -58,14 +61,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         quizToken: id,
         anonUid: body.anonUid || null,
         happiness: body.happiness,
-        destination: body.destination,
+        destination: body.destination ?? null,
         improvementText: body.improvementText || null,
       })
       .onConflictDoUpdate({
         target: [surveyResponses.quizToken, surveyResponses.anonUid],
         set: {
           happiness: body.happiness,
-          destination: body.destination,
+          destination: body.destination ?? null,
           improvementText: body.improvementText || null,
           updatedAt: new Date(),
         },

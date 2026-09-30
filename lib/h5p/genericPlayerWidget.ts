@@ -34,7 +34,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
 <head>
 <meta charset="utf-8" />
 <style>
-  :root { --blue:#1a73d9; --blue-d:#1356a3; --blue-a:#104888; --ink:#1a1a1a; --muted:#6b6b6b; }
+  :root { --blue:#1a73d9; --blue-d:#1356a3; --blue-a:#104888; --ink:#1a1a1a; --muted:#6b6b6b; --sel-bg:#cee0f4; --sel-bd:#388EFF; --sel-tx:#1a4473; }
   * { box-sizing: border-box; }
   body { margin: 0; font: 15px/1.5 "Open Sans", "Segoe UI", Roboto, -apple-system, system-ui, sans-serif; color: var(--ink); }
   .h5pcard { background: #fff; color: var(--ink); border: 1px solid #d5d5d5; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px 20px 12px; }
@@ -46,6 +46,14 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   .fallback-note { color: var(--muted); font-size: .78em; margin: 10px 0 0; }
   .fallback-note summary { cursor: pointer; }
   .fallback-note .why { margin-top: 5px; padding: 6px 8px; border-radius: 4px; background: #f4f4f4; color: #555; font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+  .survey { margin-top: 14px; padding: 12px 14px; border-radius: 6px; background: #f4f7fb; border: 1px solid #dde6f0; }
+  .survey-q { font-size: .88em; font-weight: 600; margin: 8px 0 6px; }
+  .survey-q:first-child { margin-top: 0; }
+  .survey-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .chip { font: inherit; font-size: .82em; cursor: pointer; border: 1px solid #c7d2de; background: #fff; color: var(--ink); border-radius: 999px; padding: 5px 12px; }
+  .chip:hover { background: #eef3f9; }
+  .chip.sel { background: var(--sel-bg); border-color: var(--sel-bd); color: var(--sel-tx); }
+  .survey-text { font: inherit; font-size: .85em; width: 100%; box-sizing: border-box; margin: 6px 0 10px; padding: 7px 10px; border: 1px solid #c7d2de; border-radius: 4px; }
   #h5proot-slot { margin-top: 6px; }
   #h5proot-slot .h5p-content, #h5proot-slot .h5p-container { background: #fff; }
   .foot { margin-top: 14px; }
@@ -70,7 +78,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v4";
+  var WIDGET_VERSION = "v5";
   var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
@@ -78,6 +86,45 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   var failReason = "";
   var assetErrors = [];
   var h5pNode = null;
+
+  // Mandatory pre-download survey, same flow as the quiz widget (see
+  // widget.ts) - one happiness rating (optional free text) gates the first
+  // Download click for a given content token. Scoped to content, not to the
+  // widget's session: a refinement produces a new token, which hasn't been
+  // surveyed yet even if an earlier version already was (see setData()).
+  var surveyDone = false, surveyShowing = false;
+  var surveyHappiness = null, surveyImprovementText = "";
+  var surveyTextTimer = null;
+  var HAPPINESS_OPTS = [["happy", "\\ud83d\\ude0a", "Happy"], ["okay", "\\ud83d\\ude10", "It's okay"], ["not_happy", "\\ud83d\\ude1e", "Not happy"]];
+
+  function surveyPrompt(){
+    var happyChips = HAPPINESS_OPTS.map(function(o){
+      var sel = surveyHappiness === o[0] ? " sel" : "";
+      return '<button class="chip' + sel + '" data-sv-happy="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>';
+    }).join("");
+    var ready = !!surveyHappiness;
+    return '<div class="survey">' +
+      '<div class="survey-q">Before you download \\u2014 how happy are you with this?</div>' +
+      '<div class="survey-row">' + happyChips + '</div>' +
+      '<input class="survey-text" id="sv-text" maxlength="1000" value="' + esc(surveyImprovementText) + '" placeholder="Any feedback you\\u2019d like to share? (optional)" />' +
+      '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>Continue to download</button>' +
+    '</div>';
+  }
+
+  function submitSurvey(){
+    if (!surveyHappiness) return;
+    try {
+      fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anonUid: data && data.anonUid,
+          happiness: surveyHappiness,
+          improvementText: surveyImprovementText ? surveyImprovementText.slice(0, 1000) : undefined,
+        }),
+      }).catch(function(){});
+    } catch (e) {}
+  }
 
   function assetOrigin(){ return data.appOrigin || ""; }
   function downloadUrl(){ return (data.appOrigin || "") + "/api/h5p/" + (data.token || ""); }
@@ -235,7 +282,9 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     root.innerHTML =
       '<h1 class="title">' + esc(data.title || "${Label}") + '</h1>' +
       '<div class="meta">' + esc(data.meta || "${metaLabel}") + '</div>' +
-      body() + footerBar();
+      body() +
+      (surveyShowing ? surveyPrompt() : "") +
+      footerBar();
 
     if (mode === "real" && h5pNode){
       var slot = document.getElementById("h5proot-slot");
@@ -263,17 +312,53 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
       mountReal();
     };
     var dl = by("dl");
-    if (dl) dl.onclick = function(){ logClick("click_download"); openExternal(downloadUrl()); };
+    if (dl) dl.onclick = function(){ startDownload("click_download"); };
     var h5pcom = by("h5pcom");
     if (h5pcom) h5pcom.onclick = function(){
       var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
       openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom_pricing" + uid);
     };
+    var happyBtns = document.querySelectorAll("[data-sv-happy]");
+    for (var hi = 0; hi < happyBtns.length; hi++){
+      happyBtns[hi].onclick = function(){
+        surveyHappiness = this.getAttribute("data-sv-happy"); render(); submitSurvey();
+      };
+    }
+    var svText = by("sv-text");
+    if (svText) svText.oninput = function(){
+      surveyImprovementText = this.value;
+      clearTimeout(surveyTextTimer);
+      surveyTextTimer = setTimeout(submitSurvey, 800);
+    };
+    var svContinue = by("sv-continue");
+    if (svContinue) svContinue.onclick = function(){
+      if (!surveyHappiness) return;
+      clearTimeout(surveyTextTimer);
+      submitSurvey();
+      surveyDone = true; surveyShowing = false;
+      openExternal(downloadUrl());
+      render();
+    };
+  }
+
+  // Download is gated by the mandatory survey, same as the quiz widget - the
+  // click itself is logged unconditionally, regardless of whether the survey
+  // ends up completed (that's answered separately by whether a
+  // survey_responses row exists for this token).
+  function startDownload(logType){
+    logClick(logType);
+    if (surveyDone){ openExternal(downloadUrl()); return; }
+    surveyShowing = true; render();
   }
 
   function setData(o){
     var prevToken = data && data.token;
     data = o || {};
+    if (data.token !== prevToken){
+      clearTimeout(surveyTextTimer);
+      surveyDone = false; surveyShowing = false;
+      surveyHappiness = null; surveyImprovementText = "";
+    }
     if (h5pNode && data.token !== prevToken){
       h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
       if (mode === "real" || mode === "failed") mode = "idle";

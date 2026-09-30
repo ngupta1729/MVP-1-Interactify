@@ -184,7 +184,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // Bump alongside WIDGET_URI in app/api/[transport]/route.ts, same number.
   // Shown small in the footer so a stale-vs-current card is provable from a
   // screenshot alone, instead of guessing at client-side caching every time.
-  var WIDGET_VERSION = "v25";
+  var WIDGET_VERSION = "v26";
 
   var data = null;
   // "key"  = answer-key review view (default)
@@ -210,7 +210,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // handlers don't already do; it just fires once more (covers unflushed
   // debounced text) and opens the file.
   var surveyDone = false, surveyShowing = false;
-  var surveyHappiness = null, surveyDestination = null, surveyImprovementText = "";
+  var surveyHappiness = null, surveyImprovementText = "";
   var surveyTextTimer = null;
 
   function qlist(){ return (data && data.questions) || []; }
@@ -403,31 +403,24 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 
   // ---------- pre-download survey ----------
   // Not about this quiz's content quality (that's refinementNote + the diff
-  // classifier's job) - happiness, intended destination, and what would make
-  // the experience better. Two taps required; text stays optional.
+  // classifier's job) - a holistic happiness rating plus what would make the
+  // experience better. One tap required; text stays optional. Generic
+  // wording ("this" rather than "this quiz") since the same survey flow runs
+  // for Book/Video too (see genericPlayerWidget.ts) - keeping one shared
+  // wording between the two rather than templating in the content type.
   var HAPPINESS_OPTS = [["happy", "\\ud83d\\ude0a", "Happy"], ["okay", "\\ud83d\\ude10", "It's okay"], ["not_happy", "\\ud83d\\ude1e", "Not happy"]];
-  var DEST_OPTS = [
-    ["lms", "\\ud83c\\udfeb My LMS"], ["own_site", "\\ud83c\\udf10 My own site"],
-    ["shared_direct", "\\ud83d\\udd17 Shared directly"], ["not_sure", "\\ud83e\\udd14 Not sure yet"], ["other", "Other"]
-  ];
 
   function surveyPrompt(){
     var happyChips = HAPPINESS_OPTS.map(function(o){
       var sel = surveyHappiness === o[0] ? " sel" : "";
       return '<button class="chip' + sel + '" data-sv-happy="' + o[0] + '">' + o[1] + ' ' + o[2] + '</button>';
     }).join("");
-    var destChips = DEST_OPTS.map(function(o){
-      var sel = surveyDestination === o[0] ? " sel" : "";
-      return '<button class="chip' + sel + '" data-sv-dest="' + o[0] + '">' + o[1] + '</button>';
-    }).join("");
-    var ready = !!(surveyHappiness && surveyDestination);
+    var ready = !!surveyHappiness;
 
     return '<div class="survey">' +
-      '<div class="survey-q">Before you download \\u2014 how happy are you with this quiz?</div>' +
+      '<div class="survey-q">Before you download \\u2014 how happy are you with this?</div>' +
       '<div class="survey-row">' + happyChips + '</div>' +
-      '<div class="survey-q">Where will you use it?</div>' +
-      '<div class="survey-row">' + destChips + '</div>' +
-      '<input class="survey-text" id="sv-text" maxlength="1000" value="' + esc(surveyImprovementText) + '" placeholder="Anything specific you\\u2019d change? (optional)" />' +
+      '<input class="survey-text" id="sv-text" maxlength="1000" value="' + esc(surveyImprovementText) + '" placeholder="Any feedback you\\u2019d like to share? (optional)" />' +
       '<button class="btn" id="sv-continue"' + (ready ? "" : " disabled") + '>Continue to download</button>' +
     '</div>';
   }
@@ -628,12 +621,12 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   }
 
   // Fire-and-forget upsert of the current survey answer, keyed server-side
-  // by (quiz_token, anonUid) - called every time either required field is
-  // set, and again on later changes, so the stored row always reflects the
-  // latest answer for THIS content version, whether or not download ever
-  // happens. No-ops until both required fields are set.
+  // by (quiz_token, anonUid) - called every time happiness is set, and again
+  // on later changes, so the stored row always reflects the latest answer
+  // for THIS content version, whether or not download ever happens. No-ops
+  // until happiness is set.
   function submitSurvey(){
-    if (!(surveyHappiness && surveyDestination)) return;
+    if (!surveyHappiness) return;
     try {
       fetch(assetOrigin() + "/api/h5p/" + data.token + "/survey", {
         method: "POST",
@@ -641,7 +634,6 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
         body: JSON.stringify({
           anonUid: data && data.anonUid,
           happiness: surveyHappiness,
-          destination: surveyDestination,
           improvementText: surveyImprovementText ? surveyImprovementText.slice(0, 1000) : undefined,
         }),
       }).catch(function(){});
@@ -718,12 +710,6 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
         surveyHappiness = this.getAttribute("data-sv-happy"); render(); submitSurvey();
       };
     }
-    var destBtns = document.querySelectorAll("[data-sv-dest]");
-    for (var di = 0; di < destBtns.length; di++){
-      destBtns[di].onclick = function(){
-        surveyDestination = this.getAttribute("data-sv-dest"); render(); submitSurvey();
-      };
-    }
     var svText = by("sv-text");
     if (svText) svText.oninput = function(){
       // No render() here - the input already holds what the user typed;
@@ -736,7 +722,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     };
     var svContinue = by("sv-continue");
     if (svContinue) svContinue.onclick = function(){
-      if (!(surveyHappiness && surveyDestination)) return;
+      if (!surveyHappiness) return;
       clearTimeout(surveyTextTimer);
       submitSurvey(); // covers any text typed in the last 800ms, unflushed
       surveyDone = true; surveyShowing = false;
@@ -775,7 +761,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
       // for every later refinement in the same chat.
       clearTimeout(surveyTextTimer);
       surveyDone = false; surveyShowing = false;
-      surveyHappiness = null; surveyDestination = null; surveyImprovementText = "";
+      surveyHappiness = null; surveyImprovementText = "";
     }
     if (h5pNode && data.token !== prevToken){
       h5pNode = null; realState = "idle"; failReason = ""; assetErrors = [];
