@@ -32,6 +32,9 @@ export const events = pgTable(
   (t) => [
     index("events_quiz_token_idx").on(t.quizToken),
     index("events_type_idx").on(t.eventType),
+    // Backs the per-user rate limit's count query (lib/h5p/rateLimit.ts):
+    // anonUid + eventType + a recent createdAt window.
+    index("events_anon_uid_created_idx").on(t.anonUid, t.createdAt),
   ],
 );
 

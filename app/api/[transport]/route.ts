@@ -8,6 +8,7 @@ import { buildQuizFiles } from "@/lib/h5p/buildQuiz";
 import { buildBookFiles } from "@/lib/h5p/buildBook";
 import { buildVideoFiles } from "@/lib/h5p/buildVideo";
 import { classifyRefinement } from "@/lib/h5p/diffQuiz";
+import { checkGenerationRateLimit } from "@/lib/h5p/rateLimit";
 import { QUIZ_WIDGET_HTML } from "@/lib/h5p/widget";
 import { buildPlayerWidgetHtml } from "@/lib/h5p/genericPlayerWidget";
 import { baseUrl } from "@/lib/baseUrl";
@@ -256,6 +257,28 @@ const handler = createMcpHandler(
         },
       },
       async (args, extra) => {
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+        const rateLimit = await checkGenerationRateLimit(anonUid);
+        if (!rateLimit.allowed) {
+          try {
+            await getDb().insert(events).values({ quizToken: "", eventType: "rate_limited", anonUid });
+          } catch (err) {
+            console.error("quiz: failed to log rate_limited event", err);
+          }
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text:
+                  `You've built or refined ${rateLimit.count} H5P activities in the last ` +
+                  `${rateLimit.windowMinutes} minutes, which is this early experiment's limit ` +
+                  `(${rateLimit.limit}). Please wait a bit before generating more.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const { previousToken, refinementNote, ...quizArgs } = args as Record<string, unknown>;
         const spec = quizSpecSchema.parse(quizArgs);
         // Build the file set here so bad input fails loudly inside the tool call.
@@ -268,7 +291,6 @@ const handler = createMcpHandler(
         const base = baseUrl();
         const downloadUrl = `${base}/api/h5p/${token}`;
         const playUrl = `${base}/play/${token}`;
-        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
 
         // Log on EVERY call, not just refinements - "how many users use the
         // plugin" needs a row per invocation to count distinct anonUid from.
@@ -415,6 +437,28 @@ const handler = createMcpHandler(
         },
       },
       async (args, extra) => {
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+        const rateLimit = await checkGenerationRateLimit(anonUid);
+        if (!rateLimit.allowed) {
+          try {
+            await getDb().insert(events).values({ quizToken: "", eventType: "rate_limited", anonUid });
+          } catch (err) {
+            console.error("book: failed to log rate_limited event", err);
+          }
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text:
+                  `You've built or refined ${rateLimit.count} H5P activities in the last ` +
+                  `${rateLimit.windowMinutes} minutes, which is this early experiment's limit ` +
+                  `(${rateLimit.limit}). Please wait a bit before generating more.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const { previousToken, refinementNote, ...bookArgs } = args as Record<string, unknown>;
         const spec = bookSpecSchema.parse(bookArgs);
         const built = await buildBookFiles(spec);
@@ -423,7 +467,6 @@ const handler = createMcpHandler(
         const base = baseUrl();
         const downloadUrl = `${base}/api/h5p/${token}`;
         const playUrl = `${base}/play/${token}`;
-        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
 
         try {
           if (typeof previousToken === "string" && previousToken) {
@@ -532,6 +575,28 @@ const handler = createMcpHandler(
         },
       },
       async (args, extra) => {
+        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
+        const rateLimit = await checkGenerationRateLimit(anonUid);
+        if (!rateLimit.allowed) {
+          try {
+            await getDb().insert(events).values({ quizToken: "", eventType: "rate_limited", anonUid });
+          } catch (err) {
+            console.error("video: failed to log rate_limited event", err);
+          }
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text:
+                  `You've built or refined ${rateLimit.count} H5P activities in the last ` +
+                  `${rateLimit.windowMinutes} minutes, which is this early experiment's limit ` +
+                  `(${rateLimit.limit}). Please wait a bit before generating more.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const { previousToken, refinementNote, ...videoArgs } = args as Record<string, unknown>;
         const spec = videoSpecSchema.parse(videoArgs);
         const built = await buildVideoFiles(spec);
@@ -540,7 +605,6 @@ const handler = createMcpHandler(
         const base = baseUrl();
         const downloadUrl = `${base}/api/h5p/${token}`;
         const playUrl = `${base}/play/${token}`;
-        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
 
         try {
           if (typeof previousToken === "string" && previousToken) {
