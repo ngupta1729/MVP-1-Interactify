@@ -55,11 +55,11 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   button.btn[disabled] { opacity: .45; cursor: default; }
   button.btn.sec { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
   button.btn.sec:hover { background: #f2f7fd; }
-  .h5pbar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e2e2; font-size: .72em; }
-  .h5pbar .h5pcom { color: #555; cursor: pointer; }
+  .h5pbar { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e2e2; font-size: .72em; gap: 8px; }
+  .h5pbar .h5pcom { color: #555; cursor: pointer; flex: 1 1 auto; min-width: 0; }
   .h5pbar .h5pcom:hover { color: #1a73d9; }
   .h5pbar .h5pcom b { color: var(--blue); font-weight: 700; }
-  .h5pbar .ver { color: #bbb; flex: none; margin-left: 10px; }
+  .h5pbar .ver { color: #bbb; flex: none; }
 </style>
 </head>
 <body>
@@ -70,7 +70,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v3";
+  var WIDGET_VERSION = "v4";
   var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
@@ -222,8 +222,9 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   function footerBar(){
     if (!(data && data.token)) return "";
     return '<div class="h5pbar">' +
-      '<span class="h5pcom" id="h5pcom">Want to organize this and track results? ' +
-        '<b>Open in h5p.com \\u2197</b></span>' +
+      '<span class="h5pcom" id="h5pcom">Want to organize this, collaborate with your team, or track ' +
+        'results? Try h5p.com free for 14 days, or explore their plans on ' +
+        '<b>h5p.com/pricing \\u2197</b></span>' +
       '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
     '</div>';
   }
@@ -266,7 +267,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     var h5pcom = by("h5pcom");
     if (h5pcom) h5pcom.onclick = function(){
       var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
-      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
+      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom_pricing" + uid);
     };
   }
 

@@ -26,7 +26,7 @@ export async function OPTIONS() {
 /**
  * Click-tracking redirect for the h5p.com / Lumi import links (see
  * "Lead-generation signal for h5p.com" in specs/feedback_loop_spec.md).
- * GET /api/track?token=<quiz token>&target=h5pcom|lumi&uid=<anonUid, optional>
+ * GET /api/track?token=<quiz token>&target=h5pcom|h5pcom_pricing|lumi&uid=<anonUid, optional>
  *
  * Logs the click, then 302s to the real destination with a UTM parameter -
  * so total clicks and (where a ChatGPT-derived anonUid is present) unique
@@ -37,6 +37,7 @@ export async function OPTIONS() {
  */
 const DESTINATIONS: Record<string, string> = {
   h5pcom: "https://h5p.com",
+  h5pcom_pricing: "https://h5p.com/pricing",
   lumi: "https://lumi.education",
 };
 

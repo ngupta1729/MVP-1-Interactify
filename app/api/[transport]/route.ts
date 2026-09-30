@@ -37,7 +37,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v24.html";
+const WIDGET_URI = "ui://widget/quiz-v25.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -63,15 +63,16 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v21.html",
   "ui://widget/quiz-v22.html",
   "ui://widget/quiz-v23.html",
+  "ui://widget/quiz-v24.html",
 ];
 // Bump the version segment whenever BOOK_WIDGET_HTML/VIDEO_WIDGET_HTML change —
 // same reasoning as the quiz widget's WIDGET_URI above. ChatGPT caches component
 // templates by URI, not by content, so an unchanged URI serves stale HTML even
 // after this server has been redeployed with new widget code.
-const BOOK_WIDGET_URI = "ui://widget/book-v3.html";
-const VIDEO_WIDGET_URI = "ui://widget/video-v3.html";
-const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html"];
-const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html"];
+const BOOK_WIDGET_URI = "ui://widget/book-v4.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v4.html";
+const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html", "ui://widget/book-v3.html"];
+const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html", "ui://widget/video-v3.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
@@ -343,19 +344,14 @@ const handler = createMcpHandler(
         const summary =
           `Built "${spec.title}" - ${spec.questions.length} multiple-choice question(s), ` +
           `pass mark ${spec.passPercentage}%.`;
-        // Tracked h5p.com hook. Tried living in the reply text for every
-        // client, but the model wasn't reliably including it even with a
-        // MANDATORY tool-description instruction (tested, still dropped) -
-        // so for the card-having case (anonUid set) it's a button in the
-        // widget instead (see footerBar() in widget.ts), which is
-        // guaranteed regardless of what the model says. Clients without a
-        // card at all (Claude Desktop, MCP Inspector - anonUid null) still
-        // need it in the text, since they have no button to click.
-        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
+        // The h5p.com upsell lives in the widget card's footer (footerBar()
+        // in widget.ts) and on the /play page, not here - the model wasn't
+        // reliably including it in its reply even with a MANDATORY tool
+        // instruction (tested, dropped), and repeating it in the text below
+        // would duplicate what the card/play page already say.
         const text = anonUid
           ? summary
-          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`;
 
         return {
           content: [
@@ -477,11 +473,9 @@ const handler = createMcpHandler(
         const summary =
           `Built "${spec.title}" - ${chapterCount} chapter${chapterCount === 1 ? "" : "s"}` +
           (checkpointCount ? `, ${checkpointCount} with a checkpoint question` : "") + `.`;
-        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
         const text = anonUid
           ? summary
-          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`;
 
         return {
           content: [{ type: "text", text }, uiResource],
@@ -592,11 +586,9 @@ const handler = createMcpHandler(
         };
 
         const summary = `Built "${spec.title}" - ${interactionCount} interaction${interactionCount === 1 ? "" : "s"}.`;
-        const h5pcomUrl = `${base}/api/track?token=${token}&target=h5pcom${anonUid ? `&uid=${anonUid}` : ""}`;
         const text = anonUid
           ? summary
-          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
+          : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}`;
 
         return {
           content: [{ type: "text", text }, uiResource],

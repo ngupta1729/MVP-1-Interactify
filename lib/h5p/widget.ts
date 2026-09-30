@@ -156,9 +156,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   .scorebar .num .sep { color: #757575; padding: 0 2px; }
 
   .h5pbar {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: flex-start;
     margin-top: 16px; padding-top: 8px; border-top: 1px solid #e2e2e2;
-    font-size: .72em;
+    font-size: .72em; gap: 8px;
   }
   .h5pbar .reuse {
     color: #555; cursor: pointer; font-weight: 700;
@@ -167,10 +167,10 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   .h5pbar .reuse:hover { color: #222; }
   .h5pbar .logo { font-weight: 800; color: #2a2a2a; letter-spacing: .02em; cursor: pointer; }
   .h5pbar .logo:hover { color: #000; }
-  .h5pbar .h5pcom { color: #555; cursor: pointer; }
+  .h5pbar .h5pcom { color: #555; cursor: pointer; flex: 1 1 auto; min-width: 0; }
   .h5pbar .h5pcom:hover { color: #1a73d9; }
   .h5pbar .h5pcom b { color: var(--blue); font-weight: 700; }
-  .h5pbar .ver { color: #bbb; flex: none; margin-left: 10px; }
+  .h5pbar .ver { color: #bbb; flex: none; }
 </style>
 </head>
 <body>
@@ -184,7 +184,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // Bump alongside WIDGET_URI in app/api/[transport]/route.ts, same number.
   // Shown small in the footer so a stale-vs-current card is provable from a
   // screenshot alone, instead of guessing at client-side caching every time.
-  var WIDGET_VERSION = "v24";
+  var WIDGET_VERSION = "v25";
 
   var data = null;
   // "key"  = answer-key review view (default)
@@ -544,8 +544,9 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // the model chooses to say, unlike anything routed through its reply.
     if (!(data && data.token)) return "";
     return '<div class="h5pbar">' +
-      '<span class="h5pcom" id="h5pcom">Want to organize this and track results? ' +
-        '<b>Open in h5p.com \\u2197</b></span>' +
+      '<span class="h5pcom" id="h5pcom">Want to organize this, collaborate with your team, or track ' +
+        'results? Try h5p.com free for 14 days, or explore their plans on ' +
+        '<b>h5p.com/pricing \\u2197</b></span>' +
       '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
     '</div>';
     // return '<div class="h5pbar">' +
@@ -698,7 +699,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     var h5pcom = by("h5pcom");
     if (h5pcom) h5pcom.onclick = function(){
       var uid = (data && data.anonUid) ? "&uid=" + encodeURIComponent(data.anonUid) : "";
-      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom" + uid);
+      openExternal(assetOrigin() + "/api/track?token=" + encodeURIComponent(data.token) + "&target=h5pcom_pricing" + uid);
     };
     // "full" (Open in H5P player), "reuse" and "logo" are no longer rendered
     // (see actionBtns()/footerBar()) - wiring left commented alongside them
