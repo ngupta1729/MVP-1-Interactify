@@ -37,7 +37,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v23.html";
+const WIDGET_URI = "ui://widget/quiz-v24.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -62,15 +62,16 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v20.html",
   "ui://widget/quiz-v21.html",
   "ui://widget/quiz-v22.html",
+  "ui://widget/quiz-v23.html",
 ];
 // Bump the version segment whenever BOOK_WIDGET_HTML/VIDEO_WIDGET_HTML change —
 // same reasoning as the quiz widget's WIDGET_URI above. ChatGPT caches component
 // templates by URI, not by content, so an unchanged URI serves stale HTML even
 // after this server has been redeployed with new widget code.
-const BOOK_WIDGET_URI = "ui://widget/book-v2.html";
-const VIDEO_WIDGET_URI = "ui://widget/video-v2.html";
-const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html"];
-const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html"];
+const BOOK_WIDGET_URI = "ui://widget/book-v3.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v3.html";
+const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html"];
+const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
@@ -354,7 +355,7 @@ const handler = createMcpHandler(
         const text = anonUid
           ? summary
           : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
+            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
 
         return {
           content: [
@@ -480,7 +481,7 @@ const handler = createMcpHandler(
         const text = anonUid
           ? summary
           : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
+            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
 
         return {
           content: [{ type: "text", text }, uiResource],
@@ -595,7 +596,7 @@ const handler = createMcpHandler(
         const text = anonUid
           ? summary
           : `${summary}\nPlay in a browser: ${playUrl}\nDownload .h5p: ${downloadUrl}\n` +
-            `Want folders, collaboration, or usage analytics for it? Open in h5p.com: ${h5pcomUrl}`;
+            `Want to organize this, collaborate with your team, or track results? Try h5p.com free for 14 days, or explore their plans: ${h5pcomUrl}`;
 
         return {
           content: [{ type: "text", text }, uiResource],

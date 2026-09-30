@@ -184,7 +184,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // Bump alongside WIDGET_URI in app/api/[transport]/route.ts, same number.
   // Shown small in the footer so a stale-vs-current card is provable from a
   // screenshot alone, instead of guessing at client-side caching every time.
-  var WIDGET_VERSION = "v23";
+  var WIDGET_VERSION = "v24";
 
   var data = null;
   // "key"  = answer-key review view (default)
@@ -544,7 +544,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
     // the model chooses to say, unlike anything routed through its reply.
     if (!(data && data.token)) return "";
     return '<div class="h5pbar">' +
-      '<span class="h5pcom" id="h5pcom">Want folders, collaboration, or analytics? ' +
+      '<span class="h5pcom" id="h5pcom">Want to organize this and track results? ' +
         '<b>Open in h5p.com \\u2197</b></span>' +
       '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
     '</div>';

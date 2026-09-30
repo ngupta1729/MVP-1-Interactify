@@ -70,7 +70,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v2";
+  var WIDGET_VERSION = "v3";
   var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
@@ -222,7 +222,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
   function footerBar(){
     if (!(data && data.token)) return "";
     return '<div class="h5pbar">' +
-      '<span class="h5pcom" id="h5pcom">Want folders, collaboration, or analytics? ' +
+      '<span class="h5pcom" id="h5pcom">Want to organize this and track results? ' +
         '<b>Open in h5p.com \\u2197</b></span>' +
       '<span class="ver">' + esc(WIDGET_VERSION) + '</span>' +
     '</div>';
