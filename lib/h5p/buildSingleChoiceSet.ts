@@ -9,12 +9,17 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
  * h5p/h5p-single-choice-set's real semantics.json, not guessed.
  */
 
+// H5P.JoubelUI/H5P.Question also transitively need H5P.FontIcons (confirmed
+// by reading their own library.json) - missed on the first pass (Transition
+// was already here, FontIcons wasn't), caught by a real "Failed to fetch"
+// in ChatGPT.
 export const SINGLE_CHOICE_SET_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.SingleChoiceSet", majorVersion: 1, minorVersion: 11 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
 ];
 export const SINGLE_CHOICE_SET_VENDOR_FOLDERS = folderNamesFor(SINGLE_CHOICE_SET_PRELOADED_DEPENDENCIES);
 

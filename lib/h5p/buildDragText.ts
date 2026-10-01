@@ -12,12 +12,17 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // Deps verified against the ACTUAL Hub-shipped bundle's library.json, not
 // GitHub master (which is ahead of what's published - master declares an
 // H5P.Components dependency that the shipped 1.10 release doesn't have).
+// H5P.JoubelUI/H5P.Question also transitively need H5P.Transition and
+// H5P.FontIcons (confirmed by reading their own library.json) - missed on
+// the first pass, caught by a real "Failed to fetch" in ChatGPT.
 export const DRAGTEXT_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.DragText", majorVersion: 1, minorVersion: 10 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
   { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
 ];
 export const DRAGTEXT_VENDOR_FOLDERS = folderNamesFor(DRAGTEXT_PRELOADED_DEPENDENCIES);
 

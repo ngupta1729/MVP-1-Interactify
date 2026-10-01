@@ -9,11 +9,21 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
  * real semantics.json, not guessed.
  */
 
+// H5P.JoubelUI itself depends on H5P.Transition and H5P.FontIcons (confirmed
+// by reading its own real library.json) - since we hand-build h5p.json with
+// no H5P editor doing automatic dependency resolution for us, every library
+// that uses JoubelUI must also declare JoubelUI's own transitive deps itself,
+// or the player 404s trying to fetch them. Missed on the first pass; caught
+// by a real "Failed to fetch"/404 in ChatGPT, not by the smoke test (which
+// only checks OUR OWN declared deps are bundled, not what the libraries
+// themselves actually need at runtime).
 export const DIALOGCARDS_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Dialogcards", majorVersion: 1, minorVersion: 9 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
   { machineName: "H5P.Audio", majorVersion: 1, minorVersion: 5 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
 ];
 export const DIALOGCARDS_VENDOR_FOLDERS = folderNamesFor(DIALOGCARDS_PRELOADED_DEPENDENCIES);
 

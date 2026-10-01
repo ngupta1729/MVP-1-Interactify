@@ -11,12 +11,21 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
  * blanksSpec.ts), so no transformation is needed here.
  */
 
+// H5P.JoubelUI (and H5P.Question, which itself needs JoubelUI) depend on
+// H5P.Transition and H5P.FontIcons - confirmed by reading their real
+// library.json. We hand-build h5p.json with no editor doing automatic
+// dependency resolution, so every transitive dep has to be listed here too,
+// or the player 404s trying to fetch it (caught via a real "Failed to
+// fetch" in ChatGPT, not by the smoke test, which only checks our own
+// declared deps are bundled).
 export const BLANKS_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Blanks", majorVersion: 1, minorVersion: 14 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
   { machineName: "H5P.TextUtilities", majorVersion: 1, minorVersion: 3 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
 ];
 export const BLANKS_VENDOR_FOLDERS = folderNamesFor(BLANKS_PRELOADED_DEPENDENCIES);
 

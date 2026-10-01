@@ -22,18 +22,24 @@ const MIME: Record<string, string> = {
  * GET /api/h5p/{id}/player/<path inside the package>
  * Serves the unpacked .h5p so the h5p-standalone player can render it in place.
  */
+// A 404 here still needs this header: without it, the browser reports a
+// missing dependency as "blocked by CORS policy" instead of a plain 404,
+// which sent an earlier real bug (a missing transitive H5P.JoubelUI
+// dependency) down a CORS red herring before the actual 404 was spotted.
+const CORS_HEADERS = { "Access-Control-Allow-Origin": "*" };
+
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string; path: string[] }> }) {
   const { id, path } = await ctx.params;
   let pkg;
   try {
     pkg = await getBuilt(id);
   } catch {
-    return new Response("Not found", { status: 404 });
+    return new Response("Not found", { status: 404, headers: CORS_HEADERS });
   }
 
   const rel = path.join("/");
   const data = pkg.files.get(rel);
-  if (!data) return new Response(`Not found: ${rel}`, { status: 404 });
+  if (!data) return new Response(`Not found: ${rel}`, { status: 404, headers: CORS_HEADERS });
 
   const ext = rel.split(".").pop()?.toLowerCase() ?? "";
   return new Response(new Uint8Array(data), {

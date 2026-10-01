@@ -8,6 +8,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import JSZip from "jszip";
+import { checkDependencyClosure } from "./_lib/checkDependencyClosure.mjs";
 import { buildSingleChoiceSetH5p } from "../lib/h5p/buildSingleChoiceSet.ts";
 
 const sample = {
@@ -27,6 +28,7 @@ const need = ["h5p.json", "content/content.json"];
 for (const f of need) if (!zip.file(f)) errors.push(`missing ${f}`);
 
 const h5pJson = JSON.parse(await zip.file("h5p.json").async("string"));
+errors.push(...(await checkDependencyClosure(zip, h5pJson.preloadedDependencies)));
 const contentJson = JSON.parse(await zip.file("content/content.json").async("string"));
 
 if (h5pJson.mainLibrary !== "H5P.SingleChoiceSet") errors.push("mainLibrary wrong");

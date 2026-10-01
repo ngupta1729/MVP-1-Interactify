@@ -13,12 +13,19 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // Deps and version verified against the ACTUAL Hub-shipped bundle's
 // library.json, not GitHub master (which is at 0.7; the Hub still serves
 // 0.5, and 0.5 needs H5P.MaterialDesignIcons which master's deps list omits).
+// H5P.JoubelUI/H5P.Question also transitively need FontAwesome,
+// H5P.Transition and H5P.FontIcons (confirmed by reading their own
+// library.json) - Crossword had none of these three on the first pass,
+// caught by a real "Failed to fetch" in ChatGPT.
 export const CROSSWORD_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Crossword", majorVersion: 0, minorVersion: 5 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
   { machineName: "H5P.Image", majorVersion: 1, minorVersion: 1 },
   { machineName: "H5P.MaterialDesignIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
 ];
 export const CROSSWORD_VENDOR_FOLDERS = folderNamesFor(CROSSWORD_PRELOADED_DEPENDENCIES);
 
