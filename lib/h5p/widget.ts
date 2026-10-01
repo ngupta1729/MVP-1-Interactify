@@ -184,7 +184,7 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
   // Bump alongside WIDGET_URI in app/api/[transport]/route.ts, same number.
   // Shown small in the footer so a stale-vs-current card is provable from a
   // screenshot alone, instead of guessing at client-side caching every time.
-  var WIDGET_VERSION = "v26";
+  var WIDGET_VERSION = "v27";
 
   var data = null;
   // "key"  = answer-key review view (default)
@@ -382,6 +382,17 @@ export const QUIZ_WIDGET_HTML = /* html */ `<!doctype html>
 
   // ---------- answer key (default) ----------
   function keyView(){
+    // ChatGPT can call setData() once with a still-hydrating toolOutput
+    // before the real payload arrives in a follow-up openai:set_globals
+    // event (confirmed live on the generic player widget: a click in that
+    // window hit mountReal()'s own "no player URL in the tool output" guard
+    // - data existed, but data.token/data.appOrigin didn't yet). Guarding
+    // here too means there's simply no button to misclick during that
+    // window instead of a dead click producing a visible error.
+    if (!(data && data.token && data.appOrigin)){
+      return '<div class="loading"><span class="spinner"></span>Loading&hellip;</div>';
+    }
+
     var rows = qlist().map(function(q, i){
       var opts = (q.answers || []).map(function(a){
         var cls = "answer" + (a.correct ? " correct" : "");

@@ -172,7 +172,7 @@ export const maxDuration = 60;
 
 // Bump the version segment whenever the widget HTML changes — ChatGPT caches
 // component templates by URI, so a new URI forces a re-fetch.
-const WIDGET_URI = "ui://widget/quiz-v26.html";
+const WIDGET_URI = "ui://widget/quiz-v27.html";
 // URIs used by earlier builds. Old chats bound their card to one of these; keep
 // serving the current HTML at each so those cards re-render instead of going blank.
 const LEGACY_WIDGET_URIS = [
@@ -200,23 +200,34 @@ const LEGACY_WIDGET_URIS = [
   "ui://widget/quiz-v23.html",
   "ui://widget/quiz-v24.html",
   "ui://widget/quiz-v25.html",
+  "ui://widget/quiz-v26.html",
 ];
 // Bump the version segment whenever BOOK_WIDGET_HTML/VIDEO_WIDGET_HTML change —
 // same reasoning as the quiz widget's WIDGET_URI above. ChatGPT caches component
 // templates by URI, not by content, so an unchanged URI serves stale HTML even
 // after this server has been redeployed with new widget code.
-const BOOK_WIDGET_URI = "ui://widget/book-v5.html";
-const VIDEO_WIDGET_URI = "ui://widget/video-v5.html";
-const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html", "ui://widget/book-v3.html", "ui://widget/book-v4.html"];
-const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html", "ui://widget/video-v3.html", "ui://widget/video-v4.html"];
-// New in MVP 4 - no legacy aliases needed yet, nothing has rendered these URIs before.
-const ACCORDION_WIDGET_URI = "ui://widget/accordion-v1.html";
-const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v1.html";
-const BLANKS_WIDGET_URI = "ui://widget/blanks-v1.html";
-const DRAGTEXT_WIDGET_URI = "ui://widget/dragtext-v1.html";
-const SINGLE_CHOICE_SET_WIDGET_URI = "ui://widget/singlechoiceset-v1.html";
-const CROSSWORD_WIDGET_URI = "ui://widget/crossword-v1.html";
-const DRAGQUESTION_WIDGET_URI = "ui://widget/dragquestion-v1.html";
+const BOOK_WIDGET_URI = "ui://widget/book-v6.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v6.html";
+const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html", "ui://widget/book-v3.html", "ui://widget/book-v4.html", "ui://widget/book-v5.html"];
+const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html", "ui://widget/video-v3.html", "ui://widget/video-v4.html", "ui://widget/video-v5.html"];
+// MVP 4 types: bumped from v1 to v2 for the "no player URL" race-condition
+// fix (body() now withholds the Open button until data is complete) -
+// legacy alias so cards already open in a chat from before this fix don't
+// go blank.
+const ACCORDION_WIDGET_URI = "ui://widget/accordion-v2.html";
+const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v2.html";
+const BLANKS_WIDGET_URI = "ui://widget/blanks-v2.html";
+const DRAGTEXT_WIDGET_URI = "ui://widget/dragtext-v2.html";
+const SINGLE_CHOICE_SET_WIDGET_URI = "ui://widget/singlechoiceset-v2.html";
+const CROSSWORD_WIDGET_URI = "ui://widget/crossword-v2.html";
+const DRAGQUESTION_WIDGET_URI = "ui://widget/dragquestion-v2.html";
+const LEGACY_ACCORDION_WIDGET_URIS = ["ui://widget/accordion-v1.html"];
+const LEGACY_DIALOGCARDS_WIDGET_URIS = ["ui://widget/dialogcards-v1.html"];
+const LEGACY_BLANKS_WIDGET_URIS = ["ui://widget/blanks-v1.html"];
+const LEGACY_DRAGTEXT_WIDGET_URIS = ["ui://widget/dragtext-v1.html"];
+const LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS = ["ui://widget/singlechoiceset-v1.html"];
+const LEGACY_CROSSWORD_WIDGET_URIS = ["ui://widget/crossword-v1.html"];
+const LEGACY_DRAGQUESTION_WIDGET_URIS = ["ui://widget/dragquestion-v1.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
@@ -300,16 +311,16 @@ const handler = createMcpHandler(
       }),
     );
 
-    const MVP4_WIDGETS: { name: string; uri: string; title: string; html: string }[] = [
-      { name: "accordion-widget", uri: ACCORDION_WIDGET_URI, title: "H5P accordion preview", html: ACCORDION_WIDGET_HTML },
-      { name: "dialogcards-widget", uri: DIALOGCARDS_WIDGET_URI, title: "H5P dialog cards preview", html: DIALOGCARDS_WIDGET_HTML },
-      { name: "blanks-widget", uri: BLANKS_WIDGET_URI, title: "H5P fill in the blanks preview", html: BLANKS_WIDGET_HTML },
-      { name: "dragtext-widget", uri: DRAGTEXT_WIDGET_URI, title: "H5P drag the words preview", html: DRAGTEXT_WIDGET_HTML },
-      { name: "singlechoiceset-widget", uri: SINGLE_CHOICE_SET_WIDGET_URI, title: "H5P single choice set preview", html: SINGLE_CHOICE_SET_WIDGET_HTML },
-      { name: "crossword-widget", uri: CROSSWORD_WIDGET_URI, title: "H5P crossword preview", html: CROSSWORD_WIDGET_HTML },
-      { name: "dragquestion-widget", uri: DRAGQUESTION_WIDGET_URI, title: "H5P drag and drop preview", html: DRAGQUESTION_WIDGET_HTML },
+    const MVP4_WIDGETS: { name: string; uri: string; title: string; html: string; legacyUris: string[] }[] = [
+      { name: "accordion-widget", uri: ACCORDION_WIDGET_URI, title: "H5P accordion preview", html: ACCORDION_WIDGET_HTML, legacyUris: LEGACY_ACCORDION_WIDGET_URIS },
+      { name: "dialogcards-widget", uri: DIALOGCARDS_WIDGET_URI, title: "H5P dialog cards preview", html: DIALOGCARDS_WIDGET_HTML, legacyUris: LEGACY_DIALOGCARDS_WIDGET_URIS },
+      { name: "blanks-widget", uri: BLANKS_WIDGET_URI, title: "H5P fill in the blanks preview", html: BLANKS_WIDGET_HTML, legacyUris: LEGACY_BLANKS_WIDGET_URIS },
+      { name: "dragtext-widget", uri: DRAGTEXT_WIDGET_URI, title: "H5P drag the words preview", html: DRAGTEXT_WIDGET_HTML, legacyUris: LEGACY_DRAGTEXT_WIDGET_URIS },
+      { name: "singlechoiceset-widget", uri: SINGLE_CHOICE_SET_WIDGET_URI, title: "H5P single choice set preview", html: SINGLE_CHOICE_SET_WIDGET_HTML, legacyUris: LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS },
+      { name: "crossword-widget", uri: CROSSWORD_WIDGET_URI, title: "H5P crossword preview", html: CROSSWORD_WIDGET_HTML, legacyUris: LEGACY_CROSSWORD_WIDGET_URIS },
+      { name: "dragquestion-widget", uri: DRAGQUESTION_WIDGET_URI, title: "H5P drag and drop preview", html: DRAGQUESTION_WIDGET_HTML, legacyUris: LEGACY_DRAGQUESTION_WIDGET_URIS },
     ];
-    MVP4_WIDGETS.forEach(({ name, uri, title, html }) => {
+    MVP4_WIDGETS.forEach(({ name, uri, title, html, legacyUris }) => {
       server.registerResource(
         name,
         uri,
@@ -318,6 +329,16 @@ const handler = createMcpHandler(
           contents: [{ uri, mimeType: "text/html+skybridge", text: html, _meta: WIDGET_CSP }],
         }),
       );
+      legacyUris.forEach((legacyUri, i) => {
+        server.registerResource(
+          `${name}-legacy-${i}`,
+          legacyUri,
+          { title, mimeType: "text/html+skybridge", _meta: WIDGET_CSP },
+          async () => ({
+            contents: [{ uri: legacyUri, mimeType: "text/html+skybridge", text: html, _meta: WIDGET_CSP }],
+          }),
+        );
+      });
     });
 
     // Same widget, served at the URIs older builds used, so previously rendered

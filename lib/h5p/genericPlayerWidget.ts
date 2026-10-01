@@ -80,7 +80,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v5";
+  var WIDGET_VERSION = "v6";
   var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
@@ -255,6 +255,16 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
           'ChatGPT\\u2019s card doesn\\u2019t allow loading the video player it needs. ' +
           'Download it below, or open it in h5p.com to watch it directly.</p>' +
         '<div class="foot">' + actionBtns() + '</div>';
+    }
+    // ChatGPT can call setData() once with a still-hydrating toolOutput
+    // before the real payload arrives in a follow-up openai:set_globals
+    // event (confirmed live: a click in that window hit mountReal()'s own
+    // "no player URL in the tool output" guard - data existed, but
+    // data.token/data.appOrigin didn't yet). Guarding here, not just in
+    // mountReal(), means there's simply no button to misclick during that
+    // window instead of a dead click producing a visible error.
+    if (!(data && data.token && data.appOrigin)){
+      return '<div class="loading"><span class="spinner"></span>Loading&hellip;</div>';
     }
     return '<div class="foot">' +
       '<button class="btn" id="start">\\u25b6 Open the ${label}</button>' +
