@@ -18,6 +18,13 @@ export const HUB_SOURCES = [
   "https://api.h5p.org/v1/content-types/H5P.QuestionSet",
   "https://api.h5p.org/v1/content-types/H5P.InteractiveBook",
   "https://api.h5p.org/v1/content-types/H5P.InteractiveVideo",
+  "https://api.h5p.org/v1/content-types/H5P.Accordion",
+  "https://api.h5p.org/v1/content-types/H5P.Dialogcards",
+  "https://api.h5p.org/v1/content-types/H5P.Blanks",
+  "https://api.h5p.org/v1/content-types/H5P.DragText",
+  "https://api.h5p.org/v1/content-types/H5P.SingleChoiceSet",
+  "https://api.h5p.org/v1/content-types/H5P.Crossword",
+  "https://api.h5p.org/v1/content-types/H5P.DragQuestion",
 ];
 
 export interface SourceStatus {

@@ -1,15 +1,17 @@
 /**
- * Shared inline component factory for content types beyond the quiz (Book,
- * Video): mounts the REAL H5P runtime (h5p-standalone, embedType "div") the
- * same way QUIZ_WIDGET_HTML does. Unlike the quiz widget, this has no
- * bespoke JS-lookalike fallback or answer-key view — those are irreducibly
+ * Shared inline component factory for every content type beyond the quiz:
+ * mounts the REAL H5P runtime (h5p-standalone, embedType "div") the same way
+ * QUIZ_WIDGET_HTML does. Unlike the quiz widget, this has no bespoke
+ * JS-lookalike fallback or answer-key view — those are irreducibly
  * quiz-shaped. On failure it falls back to just the Download button - there
  * is no full-page player fallback (/play/[token] is a download/metadata
  * page only, deliberately not an H5P host - see that page's own comment).
  */
 export interface PlayerWidgetOptions {
-  kind: "book" | "video";
-  label: string; // "book" | "video" — used in button/status text
+  // Not read inside this function - purely for the caller's own clarity at
+  // each buildPlayerWidgetHtml() call site.
+  kind: "book" | "video" | "accordion" | "dialogcards" | "blanks" | "dragtext" | "singlechoiceset" | "crossword" | "dragquestion";
+  label: string; // e.g. "book" | "video" — used in button/status text
   metaLabel: string; // e.g. "H5P Interactive Book" / "H5P Interactive Video"
   successSelectors: string; // CSS selectors that indicate the real player actually rendered
   /**

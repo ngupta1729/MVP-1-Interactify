@@ -2,9 +2,23 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { quizSpecSchema, type QuizSpec } from "./quizSpec";
 import { bookSpecSchema, type BookSpec } from "./bookSpec";
 import { videoSpecSchema, type VideoSpec } from "./videoSpec";
+import { accordionSpecSchema, type AccordionSpec } from "./accordionSpec";
+import { dialogcardsSpecSchema, type DialogcardsSpec } from "./dialogcardsSpec";
+import { blanksSpecSchema, type BlanksSpec } from "./blanksSpec";
+import { dragtextSpecSchema, type DragtextSpec } from "./dragtextSpec";
+import { singlechoicesetSpecSchema, type SinglechoicesetSpec } from "./singlechoicesetSpec";
+import { crosswordSpecSchema, type CrosswordSpec } from "./crosswordSpec";
+import { dragquestionSpecSchema, type DragquestionSpec } from "./dragquestionSpec";
 import { buildQuizFiles, packFiles } from "./buildQuiz";
 import { buildBookFiles } from "./buildBook";
 import { buildVideoFiles } from "./buildVideo";
+import { buildAccordionFiles } from "./buildAccordion";
+import { buildDialogcardsFiles } from "./buildDialogcards";
+import { buildBlanksFiles } from "./buildBlanks";
+import { buildDragTextFiles } from "./buildDragText";
+import { buildSingleChoiceSetFiles } from "./buildSingleChoiceSet";
+import { buildCrosswordFiles } from "./buildCrossword";
+import { buildDragQuestionFiles } from "./buildDragQuestion";
 
 /**
  * A built package is identified by an opaque token that *is* its content:
@@ -21,16 +35,43 @@ import { buildVideoFiles } from "./buildVideo";
 export type ContentSpec =
   | { kind: "quiz"; spec: QuizSpec }
   | { kind: "book"; spec: BookSpec }
-  | { kind: "video"; spec: VideoSpec };
+  | { kind: "video"; spec: VideoSpec }
+  | { kind: "accordion"; spec: AccordionSpec }
+  | { kind: "dialogcards"; spec: DialogcardsSpec }
+  | { kind: "blanks"; spec: BlanksSpec }
+  | { kind: "dragtext"; spec: DragtextSpec }
+  | { kind: "singlechoiceset"; spec: SinglechoicesetSpec }
+  | { kind: "crossword"; spec: CrosswordSpec }
+  | { kind: "dragquestion"; spec: DragquestionSpec };
 
 export function encodeSpec(cs: ContentSpec): string {
-  const validated: ContentSpec =
-    cs.kind === "quiz"
-      ? { kind: "quiz", spec: quizSpecSchema.parse(cs.spec) }
-      : cs.kind === "book"
-        ? { kind: "book", spec: bookSpecSchema.parse(cs.spec) }
-        : { kind: "video", spec: videoSpecSchema.parse(cs.spec) };
+  const validated: ContentSpec = { ...cs, spec: specSchemaFor(cs.kind).parse(cs.spec) } as ContentSpec;
   return gzipSync(Buffer.from(JSON.stringify(validated), "utf8")).toString("base64url");
+}
+
+function specSchemaFor(kind: ContentSpec["kind"]) {
+  switch (kind) {
+    case "quiz":
+      return quizSpecSchema;
+    case "book":
+      return bookSpecSchema;
+    case "video":
+      return videoSpecSchema;
+    case "accordion":
+      return accordionSpecSchema;
+    case "dialogcards":
+      return dialogcardsSpecSchema;
+    case "blanks":
+      return blanksSpecSchema;
+    case "dragtext":
+      return dragtextSpecSchema;
+    case "singlechoiceset":
+      return singlechoicesetSpecSchema;
+    case "crossword":
+      return crosswordSpecSchema;
+    case "dragquestion":
+      return dragquestionSpecSchema;
+  }
 }
 
 export function decodeSpec(token: string): ContentSpec {
@@ -41,16 +82,22 @@ export function decodeSpec(token: string): ContentSpec {
     return { kind: "quiz", spec: quizSpecSchema.parse(raw) };
   }
 
-  switch (raw?.kind) {
-    case "quiz":
-      return { kind: "quiz", spec: quizSpecSchema.parse(raw.spec) };
-    case "book":
-      return { kind: "book", spec: bookSpecSchema.parse(raw.spec) };
-    case "video":
-      return { kind: "video", spec: videoSpecSchema.parse(raw.spec) };
-    default:
-      throw new Error("Unrecognized content token.");
+  const kind = raw?.kind;
+  if (
+    kind !== "quiz" &&
+    kind !== "book" &&
+    kind !== "video" &&
+    kind !== "accordion" &&
+    kind !== "dialogcards" &&
+    kind !== "blanks" &&
+    kind !== "dragtext" &&
+    kind !== "singlechoiceset" &&
+    kind !== "crossword" &&
+    kind !== "dragquestion"
+  ) {
+    throw new Error("Unrecognized content token.");
   }
+  return { kind, spec: specSchemaFor(kind).parse(raw.spec) } as ContentSpec;
 }
 
 function buildFilesFor(cs: ContentSpec) {
@@ -61,6 +108,20 @@ function buildFilesFor(cs: ContentSpec) {
       return buildBookFiles(cs.spec);
     case "video":
       return buildVideoFiles(cs.spec);
+    case "accordion":
+      return buildAccordionFiles(cs.spec);
+    case "dialogcards":
+      return buildDialogcardsFiles(cs.spec);
+    case "blanks":
+      return buildBlanksFiles(cs.spec);
+    case "dragtext":
+      return buildDragTextFiles(cs.spec);
+    case "singlechoiceset":
+      return buildSingleChoiceSetFiles(cs.spec);
+    case "crossword":
+      return buildCrosswordFiles(cs.spec);
+    case "dragquestion":
+      return buildDragQuestionFiles(cs.spec);
   }
 }
 

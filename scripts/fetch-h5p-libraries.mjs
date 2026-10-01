@@ -48,6 +48,24 @@ const KEEP = [
   "H5P.DragNDrop-1.1",
   "H5P.DragNResize-1.2",
   "H5P.Text-1.1",
+  // Accordion
+  "H5P.Accordion-1.0",
+  // Dialog Cards
+  "H5P.Dialogcards-1.9",
+  "H5P.Audio-1.5",
+  // Fill in the Blanks
+  "H5P.Blanks-1.14",
+  "H5P.TextUtilities-1.3",
+  // Drag the Words
+  "H5P.DragText-1.10",
+  // Single Choice Set
+  "H5P.SingleChoiceSet-1.11",
+  // Crossword
+  "H5P.Crossword-0.5",
+  "H5P.Image-1.1",
+  "H5P.MaterialDesignIcons-1.0",
+  // Drag and Drop
+  "H5P.DragQuestion-1.14",
 ];
 
 const out = new JSZip();

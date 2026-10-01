@@ -7,16 +7,38 @@ const KIND_LABEL: Record<string, string> = {
   quiz: "H5P quiz",
   book: "H5P interactive book",
   video: "H5P interactive video",
+  accordion: "H5P accordion",
+  dialogcards: "H5P dialog cards",
+  blanks: "H5P fill in the blanks",
+  dragtext: "H5P drag the words",
+  singlechoiceset: "H5P single choice set",
+  crossword: "H5P crossword",
+  dragquestion: "H5P drag and drop",
 };
 
 function metaLine(cs: ReturnType<typeof decodeSpec>): string {
-  if (cs.kind === "quiz") {
-    return `${cs.spec.questions.length} questions · pass ${cs.spec.passPercentage}%`;
+  switch (cs.kind) {
+    case "quiz":
+      return `${cs.spec.questions.length} questions · pass ${cs.spec.passPercentage}%`;
+    case "book":
+      return `${cs.spec.chapters.length} chapter${cs.spec.chapters.length === 1 ? "" : "s"}`;
+    case "video":
+      return `${cs.spec.timeline.length} interaction${cs.spec.timeline.length === 1 ? "" : "s"}`;
+    case "accordion":
+      return `${cs.spec.panels.length} panel${cs.spec.panels.length === 1 ? "" : "s"}`;
+    case "dialogcards":
+      return `${cs.spec.cards.length} card${cs.spec.cards.length === 1 ? "" : "s"}`;
+    case "blanks":
+      return `${cs.spec.questions.length} question${cs.spec.questions.length === 1 ? "" : "s"}`;
+    case "dragtext":
+      return "drag the words";
+    case "singlechoiceset":
+      return `${cs.spec.choices.length} question${cs.spec.choices.length === 1 ? "" : "s"}`;
+    case "crossword":
+      return `${cs.spec.words.length} word${cs.spec.words.length === 1 ? "" : "s"}`;
+    case "dragquestion":
+      return `${cs.spec.pairs.length} pair${cs.spec.pairs.length === 1 ? "" : "s"}`;
   }
-  if (cs.kind === "book") {
-    return `${cs.spec.chapters.length} chapter${cs.spec.chapters.length === 1 ? "" : "s"}`;
-  }
-  return `${cs.spec.timeline.length} interaction${cs.spec.timeline.length === 1 ? "" : "s"}`;
 }
 
 export async function generateMetadata(

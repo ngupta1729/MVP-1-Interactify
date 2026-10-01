@@ -1,0 +1,59 @@
+/**
+ * Smoke test: build a sample Single Choice Set .h5p and check it is
+ * structurally a valid H5P package.
+ *
+ *   npx tsx scripts/smoke-build-singlechoiceset.mjs
+ */
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import JSZip from "jszip";
+import { buildSingleChoiceSetH5p } from "../lib/h5p/buildSingleChoiceSet.ts";
+
+const sample = {
+  title: "World Capitals",
+  choices: [
+    { question: "What is the capital of Japan?", answers: ["Tokyo", "Osaka", "Kyoto"] },
+    { question: "What is the capital of Australia?", answers: ["Canberra", "Sydney", "Melbourne"] },
+    { question: "What is the capital of Canada?", answers: ["Ottawa", "Toronto", "Vancouver"] },
+  ],
+};
+
+const built = await buildSingleChoiceSetH5p(sample);
+const zip = await JSZip.loadAsync(built.buffer);
+
+const errors = [];
+const need = ["h5p.json", "content/content.json"];
+for (const f of need) if (!zip.file(f)) errors.push(`missing ${f}`);
+
+const h5pJson = JSON.parse(await zip.file("h5p.json").async("string"));
+const contentJson = JSON.parse(await zip.file("content/content.json").async("string"));
+
+if (h5pJson.mainLibrary !== "H5P.SingleChoiceSet") errors.push("mainLibrary wrong");
+for (const dep of h5pJson.preloadedDependencies) {
+  const folder = `${dep.machineName}-${dep.majorVersion}.${dep.minorVersion}/library.json`;
+  if (!zip.file(folder)) errors.push(`declared dependency not bundled: ${folder}`);
+}
+if (contentJson.choices.length !== sample.choices.length) errors.push("choice count mismatch");
+contentJson.choices.forEach((c, i) => {
+  if (c.answers[0] !== sample.choices[i].answers[0]) errors.push(`choice ${i} correct answer not first`);
+});
+
+const libFolders = new Set(
+  Object.keys(zip.files)
+    .filter((n) => n.includes("/"))
+    .map((n) => n.split("/")[0])
+    .filter((n) => n !== "content"),
+);
+
+const outPath = path.join(os.tmpdir(), built.filename);
+await writeFile(outPath, built.buffer);
+
+console.log(`built ${built.filename} (${(built.buffer.length / 1024).toFixed(0)} KB)`);
+console.log(`bundled libraries: ${[...libFolders].sort().join(", ")}`);
+console.log(`wrote sample to: ${outPath}`);
+if (errors.length) {
+  console.error("\nFAILED:\n - " + errors.join("\n - "));
+  process.exit(1);
+}
+console.log("\nOK - package is structurally valid.");

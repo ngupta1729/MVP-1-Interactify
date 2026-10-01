@@ -66,3 +66,37 @@ export async function checkGenerationRateLimit(anonUid: string | null): Promise<
     return { allowed: true, count: 0, limit: MAX_GENERATIONS_PER_WINDOW, windowMinutes: WINDOW_MINUTES };
   }
 }
+
+/**
+ * Shared front-of-handler guard for every create_h5p_* tool: checks the
+ * limit, best-effort logs a rate_limited event if it's hit, and returns the
+ * MCP tool response to return immediately - or null if the caller should
+ * proceed. Factored out once there were 7 content types repeating the same
+ * ~15 lines verbatim (quiz/book/video still inline it; new types use this).
+ */
+export async function checkRateLimitOrReject(
+  anonUid: string | null,
+  toolLabel: string,
+): Promise<{ content: { type: "text"; text: string }[]; isError: true } | null> {
+  const rateLimit = await checkGenerationRateLimit(anonUid);
+  if (rateLimit.allowed) return null;
+
+  try {
+    await getDb().insert(events).values({ quizToken: "", eventType: "rate_limited", anonUid });
+  } catch (err) {
+    console.error(`${toolLabel}: failed to log rate_limited event`, err);
+  }
+
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `You've built or refined ${rateLimit.count} H5P activities in the last ` +
+          `${rateLimit.windowMinutes} minutes, which is this early experiment's limit ` +
+          `(${rateLimit.limit}). Please wait a bit before generating more.`,
+      },
+    ],
+    isError: true,
+  };
+}

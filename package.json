@@ -10,7 +10,15 @@
     "h5p:libraries": "node scripts/fetch-h5p-libraries.mjs",
     "h5p:smoke": "tsx scripts/smoke-build-h5p.mjs",
     "h5p:smoke:book": "tsx scripts/smoke-build-book.mjs",
-    "h5p:smoke:video": "tsx scripts/smoke-build-video.mjs"
+    "h5p:smoke:video": "tsx scripts/smoke-build-video.mjs",
+    "h5p:smoke:accordion": "tsx scripts/smoke-build-accordion.mjs",
+    "h5p:smoke:dialogcards": "tsx scripts/smoke-build-dialogcards.mjs",
+    "h5p:smoke:blanks": "tsx scripts/smoke-build-blanks.mjs",
+    "h5p:smoke:dragtext": "tsx scripts/smoke-build-dragtext.mjs",
+    "h5p:smoke:singlechoiceset": "tsx scripts/smoke-build-singlechoiceset.mjs",
+    "h5p:smoke:crossword": "tsx scripts/smoke-build-crossword.mjs",
+    "h5p:smoke:dragquestion": "tsx scripts/smoke-build-dragquestion.mjs",
+    "h5p:smoke:all": "npm run h5p:smoke && npm run h5p:smoke:book && npm run h5p:smoke:video && npm run h5p:smoke:accordion && npm run h5p:smoke:dialogcards && npm run h5p:smoke:blanks && npm run h5p:smoke:dragtext && npm run h5p:smoke:singlechoiceset && npm run h5p:smoke:crossword && npm run h5p:smoke:dragquestion"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
