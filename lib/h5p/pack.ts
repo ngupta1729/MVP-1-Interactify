@@ -8,7 +8,6 @@ import { blanksSpecSchema, type BlanksSpec } from "./blanksSpec";
 import { dragtextSpecSchema, type DragtextSpec } from "./dragtextSpec";
 import { singlechoicesetSpecSchema, type SinglechoicesetSpec } from "./singlechoicesetSpec";
 import { crosswordSpecSchema, type CrosswordSpec } from "./crosswordSpec";
-import { dragquestionSpecSchema, type DragquestionSpec } from "./dragquestionSpec";
 import { buildQuizFiles, packFiles } from "./buildQuiz";
 import { buildBookFiles } from "./buildBook";
 import { buildVideoFiles } from "./buildVideo";
@@ -18,7 +17,6 @@ import { buildBlanksFiles } from "./buildBlanks";
 import { buildDragTextFiles } from "./buildDragText";
 import { buildSingleChoiceSetFiles } from "./buildSingleChoiceSet";
 import { buildCrosswordFiles } from "./buildCrossword";
-import { buildDragQuestionFiles } from "./buildDragQuestion";
 
 /**
  * A built package is identified by an opaque token that *is* its content:
@@ -41,8 +39,7 @@ export type ContentSpec =
   | { kind: "blanks"; spec: BlanksSpec }
   | { kind: "dragtext"; spec: DragtextSpec }
   | { kind: "singlechoiceset"; spec: SinglechoicesetSpec }
-  | { kind: "crossword"; spec: CrosswordSpec }
-  | { kind: "dragquestion"; spec: DragquestionSpec };
+  | { kind: "crossword"; spec: CrosswordSpec };
 
 export function encodeSpec(cs: ContentSpec): string {
   const validated: ContentSpec = { ...cs, spec: specSchemaFor(cs.kind).parse(cs.spec) } as ContentSpec;
@@ -69,8 +66,6 @@ function specSchemaFor(kind: ContentSpec["kind"]) {
       return singlechoicesetSpecSchema;
     case "crossword":
       return crosswordSpecSchema;
-    case "dragquestion":
-      return dragquestionSpecSchema;
   }
 }
 
@@ -92,8 +87,7 @@ export function decodeSpec(token: string): ContentSpec {
     kind !== "blanks" &&
     kind !== "dragtext" &&
     kind !== "singlechoiceset" &&
-    kind !== "crossword" &&
-    kind !== "dragquestion"
+    kind !== "crossword"
   ) {
     throw new Error("Unrecognized content token.");
   }
@@ -120,8 +114,6 @@ function buildFilesFor(cs: ContentSpec) {
       return buildSingleChoiceSetFiles(cs.spec);
     case "crossword":
       return buildCrosswordFiles(cs.spec);
-    case "dragquestion":
-      return buildDragQuestionFiles(cs.spec);
   }
 }
 

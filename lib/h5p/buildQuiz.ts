@@ -18,8 +18,12 @@ import { loadVendorFiles, folderNamesFor } from "./vendor";
  */
 
 // Machine name + version of every runtime library the quiz (Question Set) needs.
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// H5P.Question now declares H5P.Components as a real dependency (new in
+// this Hub generation), which cascades to jQuery.ui.
 const PRELOADED_DEPENDENCIES = [
-  { machineName: "H5P.QuestionSet", majorVersion: 1, minorVersion: 20 },
+  { machineName: "H5P.QuestionSet", majorVersion: 1, minorVersion: 21 },
   { machineName: "H5P.MultiChoice", majorVersion: 1, minorVersion: 16 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
@@ -27,6 +31,8 @@ const PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Video", majorVersion: 1, minorVersion: 6 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const QUIZ_VENDOR_FOLDERS = folderNamesFor(PRELOADED_DEPENDENCIES);
 

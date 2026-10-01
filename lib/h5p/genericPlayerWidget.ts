@@ -10,7 +10,7 @@
 export interface PlayerWidgetOptions {
   // Not read inside this function - purely for the caller's own clarity at
   // each buildPlayerWidgetHtml() call site.
-  kind: "book" | "video" | "accordion" | "dialogcards" | "blanks" | "dragtext" | "singlechoiceset" | "crossword" | "dragquestion";
+  kind: "book" | "video" | "accordion" | "dialogcards" | "blanks" | "dragtext" | "singlechoiceset" | "crossword";
   label: string; // e.g. "book" | "video" — used in button/status text
   metaLabel: string; // e.g. "H5P Interactive Book" / "H5P Interactive Video"
   successSelectors: string; // CSS selectors that indicate the real player actually rendered

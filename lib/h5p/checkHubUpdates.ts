@@ -14,17 +14,21 @@
  * notes).
  */
 
+// hub-api.h5p.org, not api.h5p.org: the old Hub is frozen (confirmed via
+// H5P's own Feb 2026 "Fresh Look for Open Source H5P" announcement - "the
+// old Hub...will not receive any new updates") and only the new one serves
+// the current design system (H5P Core 1.28+). See memory note
+// h5p-hub-migration-deferred.md for the full story - migrated 2026-10-01.
 export const HUB_SOURCES = [
-  "https://api.h5p.org/v1/content-types/H5P.QuestionSet",
-  "https://api.h5p.org/v1/content-types/H5P.InteractiveBook",
-  "https://api.h5p.org/v1/content-types/H5P.InteractiveVideo",
-  "https://api.h5p.org/v1/content-types/H5P.Accordion",
-  "https://api.h5p.org/v1/content-types/H5P.Dialogcards",
-  "https://api.h5p.org/v1/content-types/H5P.Blanks",
-  "https://api.h5p.org/v1/content-types/H5P.DragText",
-  "https://api.h5p.org/v1/content-types/H5P.SingleChoiceSet",
-  "https://api.h5p.org/v1/content-types/H5P.Crossword",
-  "https://api.h5p.org/v1/content-types/H5P.DragQuestion",
+  "https://hub-api.h5p.org/v1/content-types/H5P.QuestionSet",
+  "https://hub-api.h5p.org/v1/content-types/H5P.InteractiveBook",
+  "https://hub-api.h5p.org/v1/content-types/H5P.InteractiveVideo",
+  "https://hub-api.h5p.org/v1/content-types/H5P.Accordion",
+  "https://hub-api.h5p.org/v1/content-types/H5P.Dialogcards",
+  "https://hub-api.h5p.org/v1/content-types/H5P.Blanks",
+  "https://hub-api.h5p.org/v1/content-types/H5P.DragText",
+  "https://hub-api.h5p.org/v1/content-types/H5P.SingleChoiceSet",
+  "https://hub-api.h5p.org/v1/content-types/H5P.Crossword",
 ];
 
 export interface SourceStatus {

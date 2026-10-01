@@ -17,6 +17,10 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // by a real "Failed to fetch"/404 in ChatGPT, not by the smoke test (which
 // only checks OUR OWN declared deps are bundled, not what the libraries
 // themselves actually need at runtime).
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// Dialogcards itself now declares H5P.Components as a real dependency (new
+// in this Hub generation).
 export const DIALOGCARDS_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Dialogcards", majorVersion: 1, minorVersion: 9 },
   { machineName: "H5P.JoubelUI", majorVersion: 1, minorVersion: 3 },
@@ -24,6 +28,8 @@ export const DIALOGCARDS_PRELOADED_DEPENDENCIES = [
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const DIALOGCARDS_VENDOR_FOLDERS = folderNamesFor(DIALOGCARDS_PRELOADED_DEPENDENCIES);
 

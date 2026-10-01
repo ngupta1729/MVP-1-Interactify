@@ -13,6 +13,8 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // by reading their own library.json) - missed on the first pass (Transition
 // was already here, FontIcons wasn't), caught by a real "Failed to fetch"
 // in ChatGPT.
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
 export const SINGLE_CHOICE_SET_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.SingleChoiceSet", majorVersion: 1, minorVersion: 11 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
@@ -20,6 +22,8 @@ export const SINGLE_CHOICE_SET_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const SINGLE_CHOICE_SET_VENDOR_FOLDERS = folderNamesFor(SINGLE_CHOICE_SET_PRELOADED_DEPENDENCIES);
 

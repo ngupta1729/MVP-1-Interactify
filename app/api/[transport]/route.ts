@@ -9,7 +9,6 @@ import { blanksSpecShape, blanksSpecSchema } from "@/lib/h5p/blanksSpec";
 import { dragtextSpecShape, dragtextSpecSchema } from "@/lib/h5p/dragtextSpec";
 import { singlechoicesetSpecShape, singlechoicesetSpecSchema } from "@/lib/h5p/singlechoicesetSpec";
 import { crosswordSpecShape, crosswordSpecSchema } from "@/lib/h5p/crosswordSpec";
-import { dragquestionSpecShape, dragquestionSpecSchema } from "@/lib/h5p/dragquestionSpec";
 import { encodeSpec, decodeSpec, warmCache, type ContentSpec } from "@/lib/h5p/pack";
 import { buildQuizFiles } from "@/lib/h5p/buildQuiz";
 import { buildBookFiles } from "@/lib/h5p/buildBook";
@@ -20,7 +19,6 @@ import { buildBlanksFiles } from "@/lib/h5p/buildBlanks";
 import { buildDragTextFiles } from "@/lib/h5p/buildDragText";
 import { buildSingleChoiceSetFiles } from "@/lib/h5p/buildSingleChoiceSet";
 import { buildCrosswordFiles } from "@/lib/h5p/buildCrossword";
-import { buildDragQuestionFiles } from "@/lib/h5p/buildDragQuestion";
 import { classifyRefinement } from "@/lib/h5p/diffQuiz";
 import { checkGenerationRateLimit, checkRateLimitOrReject } from "@/lib/h5p/rateLimit";
 import { QUIZ_WIDGET_HTML } from "@/lib/h5p/widget";
@@ -57,18 +55,14 @@ const DIALOGCARDS_WIDGET_HTML = buildPlayerWidgetHtml({
   label: "dialog cards",
   metaLabel: "H5P Dialog Cards",
   successSelectors: ".h5p-dialogcards",
-  // H5P.Dialogcards' own card-sizing routine (dist/h5p-dialogcards.js, the
-  // Hub-shipped 1.9.18 build) measures each card's DOM via
-  // getBoundingClientRect() with no guard against the element not being
-  // attached yet - confirmed by reading its real source, reproduced live in
-  // ChatGPT as "Cannot read properties of undefined (reading
-  // 'getBoundingClientRect')". This happens inside the library's own first
-  // render pass under div embedType, independent of our content - same
-  // category as Video's YouTube CSP block (an upstream constraint, not
-  // something our content.json can route around), so same fix: skip the
-  // inline-mount attempt and go straight to the clean fallback instead of
-  // attempting-then-crashing.
-  supportsInlineMount: false,
+  // Previously forced to the download-only fallback: the old Hub's 1.9.18
+  // build had an unguarded getBoundingClientRect() in its card-sizing
+  // routine that crashed on mount under div embedType, confirmed live in
+  // ChatGPT. Re-enabled after migrating to hub-api.h5p.org (1.9.40):
+  // confirmed by reading the new build's source that determineCardSizes()
+  // was rewritten and no longer measures the DOM at all - the crashing code
+  // path is gone, not just more defensive. Still worth watching after
+  // deploy since this wasn't exercised live before shipping.
 });
 const BLANKS_WIDGET_HTML = buildPlayerWidgetHtml({
   kind: "blanks",
@@ -93,12 +87,6 @@ const CROSSWORD_WIDGET_HTML = buildPlayerWidgetHtml({
   label: "crossword",
   metaLabel: "H5P Crossword",
   successSelectors: ".h5p-crossword",
-});
-const DRAGQUESTION_WIDGET_HTML = buildPlayerWidgetHtml({
-  kind: "dragquestion",
-  label: "activity",
-  metaLabel: "H5P Drag and Drop",
-  successSelectors: ".h5p-dragquestion, .h5p-question",
 });
 
 /**
@@ -227,19 +215,17 @@ const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/vide
 // legacy alias so cards already open in a chat from before this fix don't
 // go blank.
 const ACCORDION_WIDGET_URI = "ui://widget/accordion-v3.html";
-const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v3.html";
+const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v4.html";
 const BLANKS_WIDGET_URI = "ui://widget/blanks-v3.html";
 const DRAGTEXT_WIDGET_URI = "ui://widget/dragtext-v3.html";
 const SINGLE_CHOICE_SET_WIDGET_URI = "ui://widget/singlechoiceset-v3.html";
 const CROSSWORD_WIDGET_URI = "ui://widget/crossword-v3.html";
-const DRAGQUESTION_WIDGET_URI = "ui://widget/dragquestion-v3.html";
 const LEGACY_ACCORDION_WIDGET_URIS = ["ui://widget/accordion-v1.html", "ui://widget/accordion-v2.html"];
-const LEGACY_DIALOGCARDS_WIDGET_URIS = ["ui://widget/dialogcards-v1.html", "ui://widget/dialogcards-v2.html"];
+const LEGACY_DIALOGCARDS_WIDGET_URIS = ["ui://widget/dialogcards-v1.html", "ui://widget/dialogcards-v2.html", "ui://widget/dialogcards-v3.html"];
 const LEGACY_BLANKS_WIDGET_URIS = ["ui://widget/blanks-v1.html", "ui://widget/blanks-v2.html"];
 const LEGACY_DRAGTEXT_WIDGET_URIS = ["ui://widget/dragtext-v1.html", "ui://widget/dragtext-v2.html"];
 const LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS = ["ui://widget/singlechoiceset-v1.html", "ui://widget/singlechoiceset-v2.html"];
 const LEGACY_CROSSWORD_WIDGET_URIS = ["ui://widget/crossword-v1.html", "ui://widget/crossword-v2.html"];
-const LEGACY_DRAGQUESTION_WIDGET_URIS = ["ui://widget/dragquestion-v1.html", "ui://widget/dragquestion-v2.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
@@ -330,7 +316,6 @@ const handler = createMcpHandler(
       { name: "dragtext-widget", uri: DRAGTEXT_WIDGET_URI, title: "H5P drag the words preview", html: DRAGTEXT_WIDGET_HTML, legacyUris: LEGACY_DRAGTEXT_WIDGET_URIS },
       { name: "singlechoiceset-widget", uri: SINGLE_CHOICE_SET_WIDGET_URI, title: "H5P single choice set preview", html: SINGLE_CHOICE_SET_WIDGET_HTML, legacyUris: LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS },
       { name: "crossword-widget", uri: CROSSWORD_WIDGET_URI, title: "H5P crossword preview", html: CROSSWORD_WIDGET_HTML, legacyUris: LEGACY_CROSSWORD_WIDGET_URIS },
-      { name: "dragquestion-widget", uri: DRAGQUESTION_WIDGET_URI, title: "H5P drag and drop preview", html: DRAGQUESTION_WIDGET_HTML, legacyUris: LEGACY_DRAGQUESTION_WIDGET_URIS },
     ];
     MVP4_WIDGETS.forEach(({ name, uri, title, html, legacyUris }) => {
       server.registerResource(
@@ -1199,62 +1184,6 @@ const handler = createMcpHandler(
       },
     );
 
-    const dragquestionToolInputShape = {
-      ...dragquestionSpecShape,
-      previousToken: z
-        .string()
-        .optional()
-        .describe(
-          "If this is a refinement of a drag-and-drop activity you generated earlier with this tool, pass " +
-            "back that activity's token (the id segment of its downloadUrl/playUrl/token field) so we can " +
-            "tell what changed.",
-        ),
-      refinementNote: z.string().max(300).optional().describe("If this is a refinement, briefly say what changed and why."),
-    };
-    server.registerTool(
-      "create_h5p_dragquestion",
-      {
-        title: "Create an H5P drag-and-drop activity",
-        description:
-          "Turn content into an interactive H5P Drag and Drop activity and return a downloadable .h5p " +
-          "file. This tool builds a text-only 'match the term to its definition' board (no images) - you " +
-          "(the model) write term/definition pairs, and the learner drags each term onto its matching " +
-          "definition. Use this for matching-style content (terms, steps, categories); for other kinds of " +
-          "drag interactions involving actual images, this tool isn't a fit. To refine, call again with " +
-          "the updated pairs, passing `previousToken` and a short `refinementNote`.\n\n" +
-          "This renders as an inline card with its own working buttons (Open the activity, Download, Open " +
-          "in h5p.com) - your reply should NOT restate or re-link to anything the card already has a " +
-          "button for. Keep your reply to a short description of what you built.\n\n" +
-          "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
-          "against a reliable source before finalizing, and briefly say what you checked them against.",
-        inputSchema: dragquestionToolInputShape as unknown as z.ZodRawShape,
-        _meta: {
-          "openai/outputTemplate": DRAGQUESTION_WIDGET_URI,
-          "openai/toolInvocation/invoking": "Building your H5P drag-and-drop activity…",
-          "openai/toolInvocation/invoked": "Your H5P drag-and-drop activity is ready",
-        },
-      },
-      async (args, extra) => {
-        const anonUid = deriveAnonUid(extra?._meta as Record<string, unknown> | undefined);
-        const limited = await checkRateLimitOrReject(anonUid, "create_h5p_dragquestion");
-        if (limited) return limited;
-
-        const { previousToken, refinementNote, ...dragquestionArgs } = args as Record<string, unknown>;
-        const spec = dragquestionSpecSchema.parse(dragquestionArgs);
-        return finishContentToolCall({
-          kind: "dragquestion",
-          spec,
-          buildFiles: buildDragQuestionFiles,
-          widgetUri: DRAGQUESTION_WIDGET_URI,
-          metaLine: `${spec.pairs.length} pair${spec.pairs.length === 1 ? "" : "s"}`,
-          extraStructured: { pairCount: spec.pairs.length },
-          anonUid,
-          previousToken: typeof previousToken === "string" ? previousToken : undefined,
-          refinementNote: typeof refinementNote === "string" ? refinementNote : undefined,
-          toolLabel: "create_h5p_dragquestion",
-        });
-      },
-    );
   },
   { serverInfo: { name: "h5p-chatgpt-app", version: "0.1.0" } },
   { basePath: "/api", disableSse: true, verboseLogs: process.env.NODE_ENV !== "production" },

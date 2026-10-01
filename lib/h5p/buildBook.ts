@@ -15,9 +15,13 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
  * embedded images in chapters.
  */
 
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// H5P.Question now declares H5P.Components as a real dependency (new in
+// this Hub generation), which cascades to jQuery.ui.
 export const BOOK_PRELOADED_DEPENDENCIES = [
-  { machineName: "H5P.InteractiveBook", majorVersion: 1, minorVersion: 11 },
-  { machineName: "H5P.Column", majorVersion: 1, minorVersion: 18 },
+  { machineName: "H5P.InteractiveBook", majorVersion: 1, minorVersion: 15 },
+  { machineName: "H5P.Column", majorVersion: 1, minorVersion: 22 },
   { machineName: "H5P.AdvancedText", majorVersion: 1, minorVersion: 1 },
   { machineName: "H5P.TrueFalse", majorVersion: 1, minorVersion: 8 },
   { machineName: "H5P.MultiChoice", majorVersion: 1, minorVersion: 16 },
@@ -26,6 +30,8 @@ export const BOOK_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const BOOK_VENDOR_FOLDERS = folderNamesFor(BOOK_PRELOADED_DEPENDENCIES);
 

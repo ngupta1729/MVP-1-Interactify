@@ -26,24 +26,34 @@ const SOURCES = HUB_SOURCES;
 const OUT = path.join("lib", "h5p", "vendor", "h5p-libraries.zip");
 const META_OUT = path.join("lib", "h5p", "vendor", "h5p-libraries.meta.json");
 
+// Versions bumped 2026-10-01 for the hub-api.h5p.org migration (new design
+// system) - see memory note h5p-hub-migration-deferred.md. H5P.Components is
+// new in this generation of the Hub: H5P.Question now declares it as a real
+// dependency (confirmed in its real library.json, not guessed), which
+// cascades to nearly every content type below through H5P.Question/
+// H5P.JoubelUI - this was NOT needed on the old api.h5p.org Hub.
 const KEEP = [
-  // Quiz (H5P.QuestionSet)
-  "H5P.QuestionSet-1.20",
-  "H5P.MultiChoice-1.16",
-  "H5P.Question-1.5",
+  // Shared transitive closure of H5P.Question / H5P.JoubelUI - needed by
+  // nearly every content type below. See each builder's own preloaded-deps
+  // comment for the exact reasoning per type.
   "H5P.JoubelUI-1.3",
   "H5P.Transition-1.0",
   "H5P.FontIcons-1.0",
   "FontAwesome-4.5",
+  "H5P.Question-1.5",
+  "H5P.Components-1.0",
+  "jQuery.ui-1.10",
+  // Quiz (H5P.QuestionSet)
+  "H5P.QuestionSet-1.21",
+  "H5P.MultiChoice-1.16",
   "H5P.Video-1.6",
   // Interactive Book
-  "H5P.InteractiveBook-1.11",
-  "H5P.Column-1.18",
+  "H5P.InteractiveBook-1.15",
+  "H5P.Column-1.22",
   "H5P.AdvancedText-1.1",
   "H5P.TrueFalse-1.8",
   // Interactive Video
-  "H5P.InteractiveVideo-1.27",
-  "jQuery.ui-1.10",
+  "H5P.InteractiveVideo-1.28",
   "H5P.DragNBar-1.5",
   "H5P.DragNDrop-1.1",
   "H5P.DragNResize-1.2",
@@ -64,8 +74,6 @@ const KEEP = [
   "H5P.Crossword-0.5",
   "H5P.Image-1.1",
   "H5P.MaterialDesignIcons-1.0",
-  // Drag and Drop
-  "H5P.DragQuestion-1.14",
 ];
 
 const out = new JSZip();

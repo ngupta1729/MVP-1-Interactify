@@ -13,7 +13,6 @@ const KIND_LABEL: Record<string, string> = {
   dragtext: "H5P drag the words",
   singlechoiceset: "H5P single choice set",
   crossword: "H5P crossword",
-  dragquestion: "H5P drag and drop",
 };
 
 function metaLine(cs: ReturnType<typeof decodeSpec>): string {
@@ -36,8 +35,6 @@ function metaLine(cs: ReturnType<typeof decodeSpec>): string {
       return `${cs.spec.choices.length} question${cs.spec.choices.length === 1 ? "" : "s"}`;
     case "crossword":
       return `${cs.spec.words.length} word${cs.spec.words.length === 1 ? "" : "s"}`;
-    case "dragquestion":
-      return `${cs.spec.pairs.length} pair${cs.spec.pairs.length === 1 ? "" : "s"}`;
   }
 }
 

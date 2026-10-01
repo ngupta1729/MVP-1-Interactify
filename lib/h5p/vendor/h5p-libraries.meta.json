@@ -1,45 +1,41 @@
 {
-  "fetchedAt": "2026-10-01T17:04:20.341Z",
+  "fetchedAt": "2026-10-01T21:14:13.273Z",
   "sources": {
-    "https://api.h5p.org/v1/content-types/H5P.QuestionSet": {
-      "etag": "\"68dfc0e9-1dcce3\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:17 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.QuestionSet": {
+      "etag": "\"bfe6715f1be5ff86fd30352f2e1ec199\"",
+      "lastModified": "Wed, 04 Mar 2026 14:06:51 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.InteractiveBook": {
-      "etag": "\"68dfc112-610b8c\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:58 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.InteractiveBook": {
+      "etag": "\"c7a767abfe63400df41826427e91183d\"",
+      "lastModified": "Tue, 29 Sep 2026 07:36:00 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.InteractiveVideo": {
-      "etag": "\"68dfc133-3fb5b6\"",
-      "lastModified": "Fri, 03 Oct 2025 12:27:31 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.InteractiveVideo": {
+      "etag": "\"ca26e4a7f91579c7e8b5082ec91bb38c\"",
+      "lastModified": "Wed, 19 Aug 2026 10:19:55 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.Accordion": {
-      "etag": "\"68dfc0e3-86bbb\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:11 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.Accordion": {
+      "etag": "\"2fe2b3708d4db58a916a9dc21225b535\"",
+      "lastModified": "Fri, 20 Mar 2026 14:00:21 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.Dialogcards": {
-      "etag": "\"68dfc0fc-103f1a\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:36 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.Dialogcards": {
+      "etag": "\"7650119ef358c40bb76277a272013c20\"",
+      "lastModified": "Tue, 28 Apr 2026 06:28:44 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.Blanks": {
-      "etag": "\"68dfc100-182e8c\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:40 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.Blanks": {
+      "etag": "\"adafc248da41e91a41d0f4dfe9d37c09\"",
+      "lastModified": "Tue, 24 Mar 2026 08:11:34 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.DragText": {
-      "etag": "\"68dfc0fe-e1d5d\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:38 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.DragText": {
+      "etag": "\"186fb9fe6a72e1f56625c82639eb4bf0\"",
+      "lastModified": "Wed, 15 Apr 2026 13:27:54 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.SingleChoiceSet": {
-      "etag": "\"68dfc115-cb165\"",
-      "lastModified": "Fri, 03 Oct 2025 12:27:01 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.SingleChoiceSet": {
+      "etag": "\"8ada4d93902f9cbb9ad3f170a799a137\"",
+      "lastModified": "Tue, 29 Sep 2026 07:36:54 GMT"
     },
-    "https://api.h5p.org/v1/content-types/H5P.Crossword": {
-      "etag": "\"68dfc0fb-10f7bf\"",
-      "lastModified": "Fri, 03 Oct 2025 12:26:35 GMT"
-    },
-    "https://api.h5p.org/v1/content-types/H5P.DragQuestion": {
-      "etag": "\"69400c50-11ab5d\"",
-      "lastModified": "Mon, 15 Dec 2025 13:25:36 GMT"
+    "https://hub-api.h5p.org/v1/content-types/H5P.Crossword": {
+      "etag": "\"80f3b30370582820d9cb5b5ccc9e1113\"",
+      "lastModified": "Tue, 20 Jan 2026 11:57:03 GMT"
     }
   }
 }

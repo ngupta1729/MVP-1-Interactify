@@ -17,8 +17,12 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
  * stack - cosmetic, not a correctness bug.
  */
 
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// H5P.Question now declares H5P.Components as a real dependency (new in
+// this Hub generation).
 export const VIDEO_PRELOADED_DEPENDENCIES = [
-  { machineName: "H5P.InteractiveVideo", majorVersion: 1, minorVersion: 27 },
+  { machineName: "H5P.InteractiveVideo", majorVersion: 1, minorVersion: 28 },
   { machineName: "H5P.Video", majorVersion: 1, minorVersion: 6 },
   { machineName: "H5P.DragNBar", majorVersion: 1, minorVersion: 5 },
   { machineName: "H5P.DragNDrop", majorVersion: 1, minorVersion: 1 },
@@ -32,6 +36,7 @@ export const VIDEO_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
 ];
 export const VIDEO_VENDOR_FOLDERS = folderNamesFor(VIDEO_PRELOADED_DEPENDENCIES);
 

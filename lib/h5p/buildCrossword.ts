@@ -17,6 +17,10 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // H5P.Transition and H5P.FontIcons (confirmed by reading their own
 // library.json) - Crossword had none of these three on the first pass,
 // caught by a real "Failed to fetch" in ChatGPT.
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// H5P.Image and H5P.Question both now declare H5P.Components as a real
+// dependency (new in this Hub generation), cascading to jQuery.ui.
 export const CROSSWORD_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Crossword", majorVersion: 0, minorVersion: 5 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
@@ -26,6 +30,8 @@ export const CROSSWORD_PRELOADED_DEPENDENCIES = [
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const CROSSWORD_VENDOR_FOLDERS = folderNamesFor(CROSSWORD_PRELOADED_DEPENDENCIES);
 

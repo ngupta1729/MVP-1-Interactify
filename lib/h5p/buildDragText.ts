@@ -15,6 +15,12 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // H5P.JoubelUI/H5P.Question also transitively need H5P.Transition and
 // H5P.FontIcons (confirmed by reading their own library.json) - missed on
 // the first pass, caught by a real "Failed to fetch" in ChatGPT.
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
+// DragText and H5P.Question both now declare H5P.Components as a real
+// dependency (new in this Hub generation) - this is the Components it was
+// mistakenly expected to need on the OLD Hub during the original build
+// (and correctly removed then, since it didn't exist there yet).
 export const DRAGTEXT_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.DragText", majorVersion: 1, minorVersion: 10 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
@@ -23,6 +29,7 @@ export const DRAGTEXT_PRELOADED_DEPENDENCIES = [
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
 ];
 export const DRAGTEXT_VENDOR_FOLDERS = folderNamesFor(DRAGTEXT_PRELOADED_DEPENDENCIES);
 

@@ -18,6 +18,8 @@ import type { BuiltFiles, BuiltH5p } from "./buildQuiz";
 // or the player 404s trying to fetch it (caught via a real "Failed to
 // fetch" in ChatGPT, not by the smoke test, which only checks our own
 // declared deps are bundled).
+// Versions + deps verified against hub-api.h5p.org (the new-design-system
+// Hub, migrated 2026-10-01 - see memory note h5p-hub-migration-deferred.md).
 export const BLANKS_PRELOADED_DEPENDENCIES = [
   { machineName: "H5P.Blanks", majorVersion: 1, minorVersion: 14 },
   { machineName: "H5P.Question", majorVersion: 1, minorVersion: 5 },
@@ -26,6 +28,8 @@ export const BLANKS_PRELOADED_DEPENDENCIES = [
   { machineName: "FontAwesome", majorVersion: 4, minorVersion: 5 },
   { machineName: "H5P.Transition", majorVersion: 1, minorVersion: 0 },
   { machineName: "H5P.FontIcons", majorVersion: 1, minorVersion: 0 },
+  { machineName: "H5P.Components", majorVersion: 1, minorVersion: 0 },
+  { machineName: "jQuery.ui", majorVersion: 1, minorVersion: 10 },
 ];
 export const BLANKS_VENDOR_FOLDERS = folderNamesFor(BLANKS_PRELOADED_DEPENDENCIES);
 
