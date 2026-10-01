@@ -82,6 +82,14 @@ function buildContentJson(spec: DragquestionSpec) {
     width: BOX_WIDTH_EM,
     correctElements: [String(i)],
     backgroundOpacity: 100,
+    // tipsAndFeedback is marked optional in semantics.json, but
+    // H5P.DragQuestion's own runtime (dropzone.js, drag-question.js) reads
+    // dropZone.tipsAndFeedback.tip/.feedbackOnCorrect/.feedbackOnIncorrect
+    // unconditionally, with no undefined guard - confirmed by reading its
+    // real source. Omitting this field crashes the player at mount with
+    // "Cannot read properties of undefined (reading 'tip')", caught live in
+    // ChatGPT. Always include it, even empty.
+    tipsAndFeedback: { tip: "", feedbackOnCorrect: "", feedbackOnIncorrect: "" },
     single: true,
     autoAlign: false,
   }));

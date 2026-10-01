@@ -80,7 +80,7 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
   }); }
 
-  var WIDGET_VERSION = "v6";
+  var WIDGET_VERSION = "v7";
   var SUPPORTS_INLINE_MOUNT = ${supportsInlineMount ? "true" : "false"};
   var data = null;
   var mode = "idle"; // idle | real
@@ -251,9 +251,8 @@ export function buildPlayerWidgetHtml(opts: PlayerWidgetOptions): string {
         '</div>';
     }
     if (!SUPPORTS_INLINE_MOUNT){
-      return '<p class="fallback-note">This ${label} can\\u2019t play inline here \\u2014 ' +
-          'ChatGPT\\u2019s card doesn\\u2019t allow loading the video player it needs. ' +
-          'Download it below, or open it in h5p.com to watch it directly.</p>' +
+      return '<p class="fallback-note">This ${label} can\\u2019t play inline here. ' +
+          'Download it below, or open it in h5p.com to use it directly.</p>' +
         '<div class="foot">' + actionBtns() + '</div>';
     }
     // ChatGPT can call setData() once with a still-hydrating toolOutput

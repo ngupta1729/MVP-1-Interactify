@@ -47,6 +47,13 @@ elements.forEach((el, i) => {
 });
 dropZones.forEach((dz, i) => {
   if (dz.correctElements[0] !== String(i)) errors.push(`dropZone ${i} correctElements cross-reference wrong: ${JSON.stringify(dz.correctElements)}`);
+  // H5P.DragQuestion's own runtime reads tipsAndFeedback.tip/.feedbackOnCorrect/
+  // .feedbackOnIncorrect unconditionally despite this field being optional in
+  // semantics.json - a missing object crashes the player at mount (caught live
+  // in ChatGPT as "Cannot read properties of undefined (reading 'tip')").
+  if (!dz.tipsAndFeedback || typeof dz.tipsAndFeedback.tip !== "string") {
+    errors.push(`dropZone ${i} missing tipsAndFeedback - H5P.DragQuestion's runtime will crash reading .tip on mount`);
+  }
 });
 
 const libFolders = new Set(

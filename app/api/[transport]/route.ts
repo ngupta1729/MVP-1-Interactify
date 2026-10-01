@@ -57,6 +57,18 @@ const DIALOGCARDS_WIDGET_HTML = buildPlayerWidgetHtml({
   label: "dialog cards",
   metaLabel: "H5P Dialog Cards",
   successSelectors: ".h5p-dialogcards",
+  // H5P.Dialogcards' own card-sizing routine (dist/h5p-dialogcards.js, the
+  // Hub-shipped 1.9.18 build) measures each card's DOM via
+  // getBoundingClientRect() with no guard against the element not being
+  // attached yet - confirmed by reading its real source, reproduced live in
+  // ChatGPT as "Cannot read properties of undefined (reading
+  // 'getBoundingClientRect')". This happens inside the library's own first
+  // render pass under div embedType, independent of our content - same
+  // category as Video's YouTube CSP block (an upstream constraint, not
+  // something our content.json can route around), so same fix: skip the
+  // inline-mount attempt and go straight to the clean fallback instead of
+  // attempting-then-crashing.
+  supportsInlineMount: false,
 });
 const BLANKS_WIDGET_HTML = buildPlayerWidgetHtml({
   kind: "blanks",
@@ -206,28 +218,28 @@ const LEGACY_WIDGET_URIS = [
 // same reasoning as the quiz widget's WIDGET_URI above. ChatGPT caches component
 // templates by URI, not by content, so an unchanged URI serves stale HTML even
 // after this server has been redeployed with new widget code.
-const BOOK_WIDGET_URI = "ui://widget/book-v6.html";
-const VIDEO_WIDGET_URI = "ui://widget/video-v6.html";
-const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html", "ui://widget/book-v3.html", "ui://widget/book-v4.html", "ui://widget/book-v5.html"];
-const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html", "ui://widget/video-v3.html", "ui://widget/video-v4.html", "ui://widget/video-v5.html"];
+const BOOK_WIDGET_URI = "ui://widget/book-v7.html";
+const VIDEO_WIDGET_URI = "ui://widget/video-v7.html";
+const LEGACY_BOOK_WIDGET_URIS = ["ui://widget/book-v1.html", "ui://widget/book-v2.html", "ui://widget/book-v3.html", "ui://widget/book-v4.html", "ui://widget/book-v5.html", "ui://widget/book-v6.html"];
+const LEGACY_VIDEO_WIDGET_URIS = ["ui://widget/video-v1.html", "ui://widget/video-v2.html", "ui://widget/video-v3.html", "ui://widget/video-v4.html", "ui://widget/video-v5.html", "ui://widget/video-v6.html"];
 // MVP 4 types: bumped from v1 to v2 for the "no player URL" race-condition
 // fix (body() now withholds the Open button until data is complete) -
 // legacy alias so cards already open in a chat from before this fix don't
 // go blank.
-const ACCORDION_WIDGET_URI = "ui://widget/accordion-v2.html";
-const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v2.html";
-const BLANKS_WIDGET_URI = "ui://widget/blanks-v2.html";
-const DRAGTEXT_WIDGET_URI = "ui://widget/dragtext-v2.html";
-const SINGLE_CHOICE_SET_WIDGET_URI = "ui://widget/singlechoiceset-v2.html";
-const CROSSWORD_WIDGET_URI = "ui://widget/crossword-v2.html";
-const DRAGQUESTION_WIDGET_URI = "ui://widget/dragquestion-v2.html";
-const LEGACY_ACCORDION_WIDGET_URIS = ["ui://widget/accordion-v1.html"];
-const LEGACY_DIALOGCARDS_WIDGET_URIS = ["ui://widget/dialogcards-v1.html"];
-const LEGACY_BLANKS_WIDGET_URIS = ["ui://widget/blanks-v1.html"];
-const LEGACY_DRAGTEXT_WIDGET_URIS = ["ui://widget/dragtext-v1.html"];
-const LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS = ["ui://widget/singlechoiceset-v1.html"];
-const LEGACY_CROSSWORD_WIDGET_URIS = ["ui://widget/crossword-v1.html"];
-const LEGACY_DRAGQUESTION_WIDGET_URIS = ["ui://widget/dragquestion-v1.html"];
+const ACCORDION_WIDGET_URI = "ui://widget/accordion-v3.html";
+const DIALOGCARDS_WIDGET_URI = "ui://widget/dialogcards-v3.html";
+const BLANKS_WIDGET_URI = "ui://widget/blanks-v3.html";
+const DRAGTEXT_WIDGET_URI = "ui://widget/dragtext-v3.html";
+const SINGLE_CHOICE_SET_WIDGET_URI = "ui://widget/singlechoiceset-v3.html";
+const CROSSWORD_WIDGET_URI = "ui://widget/crossword-v3.html";
+const DRAGQUESTION_WIDGET_URI = "ui://widget/dragquestion-v3.html";
+const LEGACY_ACCORDION_WIDGET_URIS = ["ui://widget/accordion-v1.html", "ui://widget/accordion-v2.html"];
+const LEGACY_DIALOGCARDS_WIDGET_URIS = ["ui://widget/dialogcards-v1.html", "ui://widget/dialogcards-v2.html"];
+const LEGACY_BLANKS_WIDGET_URIS = ["ui://widget/blanks-v1.html", "ui://widget/blanks-v2.html"];
+const LEGACY_DRAGTEXT_WIDGET_URIS = ["ui://widget/dragtext-v1.html", "ui://widget/dragtext-v2.html"];
+const LEGACY_SINGLE_CHOICE_SET_WIDGET_URIS = ["ui://widget/singlechoiceset-v1.html", "ui://widget/singlechoiceset-v2.html"];
+const LEGACY_CROSSWORD_WIDGET_URIS = ["ui://widget/crossword-v1.html", "ui://widget/crossword-v2.html"];
+const LEGACY_DRAGQUESTION_WIDGET_URIS = ["ui://widget/dragquestion-v1.html", "ui://widget/dragquestion-v2.html"];
 const APP_ORIGIN = new URL(baseUrl()).origin;
 
 // Lets the ChatGPT widget load the h5p-standalone runtime + package files from our
