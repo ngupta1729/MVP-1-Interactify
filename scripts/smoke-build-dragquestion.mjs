@@ -14,9 +14,9 @@ import { buildDragQuestionH5p } from "../lib/h5p/buildDragQuestion.ts";
 const sample = {
   title: "Match the Programming Term",
   pairs: [
-    { term: "Variable", definition: "A named storage location for a value" },
-    { term: "Function", definition: "A reusable block of code that performs a task" },
-    { term: "Loop", definition: "A structure that repeats code while a condition holds" },
+    { term: "Variable", definition: "A named storage location" },
+    { term: "Function", definition: "A reusable block of code" },
+    { term: "Loop", definition: "Repeats code while a condition holds" },
     { term: "Array", definition: "An ordered collection of values" },
   ],
 };

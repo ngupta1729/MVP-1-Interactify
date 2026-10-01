@@ -14,8 +14,19 @@ import { z } from "zod";
  */
 
 export const dragPairSchema = z.object({
-  term: z.string().min(1).max(60).describe("The short draggable text (a term, label, or step)"),
-  definition: z.string().min(1).max(160).describe("The drop target's label this term matches (a definition, category, or description)"),
+  term: z
+    .string()
+    .min(1)
+    .max(24)
+    .describe("The short draggable text (a term, label, or step) - a word or two, not a phrase"),
+  definition: z
+    .string()
+    .min(1)
+    .max(55)
+    .describe(
+      "The drop target's label this term matches (a definition, category, or description) - keep it to a " +
+        "short phrase, not a full sentence, so it fits the fixed-size drop target without being cut off",
+    ),
 });
 
 export const dragquestionSpecSchema = z.object({

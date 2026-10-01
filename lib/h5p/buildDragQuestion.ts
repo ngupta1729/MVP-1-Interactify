@@ -41,13 +41,23 @@ export const DRAGQUESTION_VENDOR_FOLDERS = folderNamesFor(DRAGQUESTION_PRELOADED
 // pixel-percentage calculation here would silently produce tiny or huge
 // boxes depending on font size. settings.size.width/height below only sets
 // the canvas's aspect ratio for responsive scaling, not absolute pixels.
+//
+// ROW_HEIGHT (the unit Y-position percentages are computed against) and
+// BOX_HEIGHT_EM (the box's actual rendered height) are two different
+// coordinate systems that don't automatically stay proportional to each
+// other as the container resizes - confirmed as a real bug live in ChatGPT:
+// rows visually overlapped because the Y-slot between rows came out smaller
+// than a box's real rendered height once definition text wrapped to two
+// lines. ROW_HEIGHT is kept deliberately large relative to BOX_HEIGHT_EM
+// (roughly 2x) as a safety margin, not because the content needs that much
+// space - it's slack for the two systems' built-in imprecision.
 const CANVAS_WIDTH = 620;
-const ROW_HEIGHT = 60;
-const BOX_WIDTH_EM = 13;
-const BOX_HEIGHT_EM = 3.2;
+const ROW_HEIGHT = 140;
+const BOX_WIDTH_EM = 14;
+const BOX_HEIGHT_EM = 4.2;
 const TOP_MARGIN = 20;
 const LEFT_X_PCT = 3;
-const RIGHT_X_PCT = 55;
+const RIGHT_X_PCT = 50;
 
 function advancedTextField(text: string) {
   return {
