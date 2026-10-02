@@ -11,9 +11,15 @@ at the URL `mcp.json` points to; nothing here is deployed.
 - `mcp.json` — points at the already-deployed, already-live MCP server
   (`https://project2608b.vercel.app/api/mcp`) — this package does *not* bundle a server,
   it references the remote one
-- `skills/learning-design-for-interactives/` — optional instructional-design guidance
-  the model can draw on across all 9 content types (not tool-specific mechanics, which
-  stay in each tool's own description in `app/api/[transport]/route.ts`)
+- `skills/` — optional, cross-cutting guidance the model can draw on across all 9 content
+  types (not tool-specific mechanics, which stay in each tool's own description in
+  `app/api/[transport]/route.ts`):
+  - `choosing-the-right-h5p-content-type/` — which of the 9 types fits a given learning
+    goal, before any tool is called
+  - `learning-design-for-interactives/` — checkpoint placement, distractor quality,
+    feedback, once a content type is already chosen
+  - `accessible-interactive-design/` — wording and answer-matching choices that affect
+    screen reader users, language learners, and cognitive accessibility
 - `assets/icon.png` — same icon as `app/icon.svg`, rasterized for the manifest
 
 ## To submit
