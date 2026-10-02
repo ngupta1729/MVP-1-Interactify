@@ -12,11 +12,10 @@
     "com.openai": {
       "interface": {
         "displayName": "Interactify Beta",
-        "subtitle": "H5P activities in ChatGPT",
-        "shortDescription": "Turn your teaching content into interactive H5P activities - quizzes, books, videos, and more - right inside ChatGPT.",
+        "shortDescription": "H5P activities in ChatGPT",
         "longDescription": "Interactify Beta turns content you're already working with in ChatGPT - lecture notes, a training doc, a YouTube video, a vocabulary list - into interactive H5P learning activities, built through conversation.\n\nDescribe what you want. Interactify builds a real H5P activity, shows it inline in the chat where the format allows, and lets you refine it by just asking for changes - \"make question 3 harder,\" \"add two more flashcards.\" When you're ready, download it as a standard .h5p file to use in your LMS, on a website, or hosted on h5p.com.\n\nSupports nine H5P content types: Quiz, Interactive Book, Interactive Video, Accordion, Dialog Cards, Fill in the Blanks, Drag the Words, Single Choice Set, and Crossword.\n\nNo account or sign-up required.",
         "developerName": "Wandr Labs",
-        "category": "Education",
+        "category": "Education & Research",
         "capabilities": ["Write"],
         "websiteURL": "https://project2608b.vercel.app",
         "privacyPolicyURL": "https://project2608b.vercel.app/privacy",
