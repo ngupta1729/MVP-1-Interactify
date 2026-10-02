@@ -431,6 +431,7 @@ const handler = createMcpHandler(
           "if their message already makes this clear either way (e.g. they already pasted " +
           "content, attached a file, or explicitly asked for a generic/example quiz).",
         inputSchema: toolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P quiz…",
@@ -611,6 +612,7 @@ const handler = createMcpHandler(
           "if their message already makes this clear either way (e.g. they already pasted " +
           "content, attached a file, or explicitly asked for a generic/example book).",
         inputSchema: bookToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": BOOK_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P book…",
@@ -749,6 +751,7 @@ const handler = createMcpHandler(
           "transcript. Only ask the user directly if no such tool is available to you, or it " +
           "fails. Don't ask if they've already described the content themselves.",
         inputSchema: videoToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": VIDEO_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P interactive video…",
@@ -872,6 +875,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: accordionToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": ACCORDION_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P accordion…",
@@ -927,6 +931,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: dialogcardsToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": DIALOGCARDS_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P dialog cards…",
@@ -984,6 +989,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: blanksToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": BLANKS_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P fill-in-the-blanks activity…",
@@ -1041,6 +1047,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: dragtextToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": DRAGTEXT_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P drag-the-words activity…",
@@ -1098,6 +1105,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: singleChoiceSetToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": SINGLE_CHOICE_SET_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P single choice set…",
@@ -1156,6 +1164,7 @@ const handler = createMcpHandler(
           "If the content touches facts that could be time-sensitive or easy to get wrong, verify them " +
           "against a reliable source before finalizing, and briefly say what you checked them against.",
         inputSchema: crosswordToolInputShape as unknown as z.ZodRawShape,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
         _meta: {
           "openai/outputTemplate": CROSSWORD_WIDGET_URI,
           "openai/toolInvocation/invoking": "Building your H5P crossword…",
