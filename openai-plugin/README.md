@@ -6,11 +6,19 @@ at the URL `mcp.json` points to; nothing here is deployed.
 
 ## Structure
 
-- `plugin.json` — the manifest (name, description, OpenAI-specific display fields: icon,
-  category, privacy policy link, etc.)
+- `plugin.json` — the Agent Plugins manifest (agent-plugins.org schema: name, description,
+  author, and the `com.openai` interface block with icon, privacy/terms/support URLs, etc.)
 - `mcp.json` — points at the already-deployed, already-live MCP server
   (`https://project2608b.vercel.app/api/mcp`) — this package does *not* bundle a server,
   it references the remote one
+- `chatgpt-app-submission.json` — a *separate* file the submission portal itself reads
+  for `app_info` (display name, subtitle ≤30 chars, category - must be the exact
+  uppercase enum like `EDUCATION`, not `plugin.json`'s own `category` string), the 9
+  tools' annotations/justifications, and the review form's required test cases (≥5
+  positive, ≥3 negative). This is OpenAI's own schema
+  (`https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json`), not
+  the agent-plugins.org one `plugin.json` follows - the portal validates the two files
+  independently, so a fix in one doesn't carry over to the other.
 - `skills/` — optional, cross-cutting guidance the model can draw on across all 9 content
   types (not tool-specific mechanics, which stay in each tool's own description in
   `app/api/[transport]/route.ts`):

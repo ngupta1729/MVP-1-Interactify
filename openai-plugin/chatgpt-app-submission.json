@@ -1,0 +1,152 @@
+{
+  "$schema": "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "Interactify Beta",
+    "subtitle": "H5P activities in ChatGPT",
+    "description": "Interactify Beta turns content you're already working with in ChatGPT - lecture notes, a training doc, a YouTube video, a vocabulary list - into interactive H5P learning activities, built through conversation.\n\nDescribe what you want. Interactify builds a real H5P activity, shows it inline in the chat where the format allows, and lets you refine it by just asking for changes - \"make question 3 harder,\" \"add two more flashcards.\" When you're ready, download it as a standard .h5p file to use in your LMS, on a website, or hosted on h5p.com.\n\nSupports nine H5P content types: Quiz, Interactive Book, Interactive Video, Accordion, Dialog Cards, Fill in the Blanks, Drag the Words, Single Choice Set, and Crossword.\n\nNo account or sign-up required.",
+    "category": "EDUCATION"
+  },
+  "tools": {
+    "create_h5p_quiz": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Quiz package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the quiz inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new quiz content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_book": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Interactive Book package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the book inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new book content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_interactive_video": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Interactive Video package around a supplied YouTube link and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the activity inline in the chat and as a downloadable file; it only reads the public YouTube video the user supplies and never posts or publishes anything itself.",
+        "destructive_justification": "Only creates new video-activity content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_accordion": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Accordion package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the accordion inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new accordion content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_dialogcards": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Dialog Cards package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the flashcard deck inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new flashcard content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_blanks": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Fill in the Blanks package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the activity inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new activity content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_dragtext": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Drag the Words package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the activity inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new activity content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_singlechoiceset": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Single Choice Set package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the activity inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new activity content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    },
+    "create_h5p_crossword": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Generates a new H5P Crossword package and writes a usage event to the database; it does not only read or look up existing data.",
+        "open_world_justification": "Returns the crossword inline in the chat and as a downloadable file; it never posts, publishes, or sends anything to an external or public system.",
+        "destructive_justification": "Only creates new crossword content; it cannot delete, overwrite, or irreversibly modify any existing data."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Teacher wants to convert lecture notes into a graded quiz for students.",
+      "user_prompt": "Turn these lecture notes on photosynthesis into a quiz my students can take: [paste notes]. Make it 5 multiple-choice questions.",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_h5p_quiz",
+      "expected_output": "An H5P Quiz with 5 multiple-choice questions reflecting the notes, rendered inline in the chat and downloadable as a .h5p file.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Course creator wants a written guide turned into a self-paced resource with comprehension checks along the way.",
+      "user_prompt": "Make an interactive book out of my onboarding guide below, with a quick check after each major section: [paste guide]",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_h5p_book",
+      "expected_output": "An H5P Interactive Book with one chapter per major section and a checkpoint question after each, rendered inline and downloadable as .h5p.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Instructor has an existing YouTube video and wants engagement checkpoints added without re-editing the video.",
+      "user_prompt": "Here's a YouTube video on the water cycle: [YouTube URL]. Add a few questions throughout so students stay engaged.",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_h5p_interactive_video",
+      "expected_output": "An H5P Interactive Video wrapping the supplied video with timed questions at relevant points, rendered inline where supported and downloadable as .h5p.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Language teacher wants self-paced flashcards for vocabulary recall.",
+      "user_prompt": "Make flashcards from this Spanish vocabulary list for my class: [term/definition list]",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_h5p_dialogcards",
+      "expected_output": "An H5P Dialog Cards deck with one card per term, term on the front and definition on the back, rendered inline and downloadable as .h5p.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Teacher wants a vocabulary-reinforcement activity that forces recall from a definition rather than simple word recognition.",
+      "user_prompt": "Build a crossword using these 8 vocabulary words and their definitions from my biology unit: [word/definition list]",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_h5p_crossword",
+      "expected_output": "An H5P Crossword with clues derived from the supplied definitions and a solvable grid built from the supplied answers, rendered inline and downloadable as .h5p.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Off-topic request unrelated to building any learning activity - no tool should trigger.",
+      "user_prompt": "What's the weather like today?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "No Interactify tool is invoked; the model answers normally or explains it can't help with that.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Sounds education-related, which might make the model think an education tool like Interactify could help, but none of Interactify's tools perform grading or assessment of existing student work.",
+      "user_prompt": "Can you grade my students' essays and give them feedback?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "No Interactify tool fires - Interactify only generates new interactive activities, it does not grade or review existing student submissions.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Sounds like it could be Interactify's Drag the Words tool since both involve dragging, but this specifically asks for image-based drag-and-drop onto a diagram, which Interactify does not support (text-only content generation).",
+      "user_prompt": "Make a drag-and-drop activity where I drag images onto a diagram.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "Declined - image-based drag-and-drop isn't offered. The model explains Interactify is text-only and doesn't attempt it with a different tool.",
+      "expected_output_url": null
+    }
+  ]
+}
