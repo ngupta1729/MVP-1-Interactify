@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-const CHALLENGE_TOKEN = "cwhr55qB93KZRwbd2NqmzmAKpA37c";
+const CHALLENGE_TOKEN = "cwhr55qB93KZRwbd2NqmzmAKpA37c6MQ8HcncK_xT_4";
 
 export async function GET() {
   return new Response(CHALLENGE_TOKEN, {
