@@ -26,4 +26,7 @@ Thumbs.db
 # Local-only scratch (screenshots, analysis inputs) — never commit
 scratch/
 
+# Build output, not source — regenerate from openai-plugin/ (see its README)
+interactify-beta-plugin.zip
+
 .env*

@@ -3,7 +3,10 @@
   "name": "interactify-beta",
   "version": "0.1.0",
   "description": "Turn your teaching content into interactive H5P activities - quizzes, books, videos, and more - right inside ChatGPT.",
-  "author": "Wandr Labs",
+  "author": {
+    "name": "Wandr Labs",
+    "email": "labswandr@gmail.com"
+  },
   "homepage": "https://project2608b.vercel.app",
   "extensions": {
     "com.openai": {
