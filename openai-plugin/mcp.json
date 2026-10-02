@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "interactify": {
+      "type": "streamable-http",
+      "url": "https://project2608b.vercel.app/api/mcp"
+    }
+  }
+}
